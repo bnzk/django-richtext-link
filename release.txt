@@ -1,0 +1,28 @@
+# dont change any files besides CHANGELOG.md and __init__.py during procedure.
+
+### no git flow, main branch pushes trigger github actions that then makes the release on PYPI
+
+# update everything
+git checkout main
+# make sure we're up to date
+git pull ; git pull upstream main
+git checkout develop
+# merge release changes
+git merge main
+
+# version bump in quilljs_link/__init__.py
+# last chance for changelog
+git commit -am'x.x.x release'
+git tag x.x.x
+
+# got to main branch
+git checkout main
+# merge
+git merge develop
+
+# push (and wait for build/publish)
+git push --all; git push --tags
+git push upstream --all; git push upstream --tags
+
+git checkout develop
+# add next version and DEV to version

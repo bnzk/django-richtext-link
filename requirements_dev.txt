@@ -1,0 +1,14 @@
+# mainly to have migrations compatible with the oldest supported django version
+django<6
+
+# soft package deps (templatetag + link_index + link_model admin), so a quick
+# manage.py test works
+lxml
+cssselect
+django-formfieldstash
+
+# dev & test utils, so you can do a quick manage.py test without tox (that is, included as well)
+pre-commit
+coverage
+tox
+selenium

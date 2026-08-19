@@ -1,0 +1,118 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "django-quilljs-link"
+dynamic = ["version"]
+description = "Model based linking for the Quill 2 rich text editor in Django - the link dialog is a plain Django admin form"
+readme = { file = "README.md", content-type = "text/markdown" }
+license = { file = "LICENSE" }
+authors = [
+  { name = "Ben Stähli", email = "bnzk@bnzk.ch" },
+]
+keywords = ["django", "quill", "quilljs", "richtext", "wysiwyg", "link", "editor"]
+requires-python = ">=3.11"
+dependencies = [
+  "django",
+]
+
+[project.optional-dependencies]
+templatetag = [
+  "lxml",
+  "cssselect",
+]
+linkmodel = [
+  "django-formfieldstash",
+]
+
+[project.urls]
+Homepage = "https://github.com/bnzk/django-quilljs-link"
+Changelog = "https://github.com/bnzk/django-quilljs-link/blob/main/CHANGELOG.md"
+
+[tool.hatch.version]
+path = "quilljs_link/__init__.py"
+
+[tool.hatch.build]
+packages = ["quilljs_link"]
+
+
+[tool.ruff]
+# B = Bugbear
+# DJ = django
+# T20 = print
+select = [
+  # pyflakes, pycodestyle
+  "F", "E", "W",
+  # mmcabe
+  "C90",
+  # isort
+  "I",
+  # pep8-naming
+  "N",
+  # pyupgrade
+  "UP",
+  # flake8-2020
+  "YTT",
+  # flake8-boolean-trap
+  "FBT",
+  # flake8-bugbear
+  "B",
+  # flake8-comprehensions
+  "C4",
+  # flake8-django
+  "DJ",
+  # flake8-pie
+  "PIE",
+  # flake8-simplify
+  "SIM",
+  # flake8-gettext
+  "INT",
+  # pygrep-hooks
+  "PGH",
+  # pylint
+  "PL",
+  # unused noqa
+  "RUF100",
+  # flake8-print
+  "T20",
+]
+ignore = []
+# Avoid trying to fix flake8-bugbear (`B`) violations.
+unfixable = ["B"]
+
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+    "quilljs_link/static/quilljs_link/vendor",
+]
+per-file-ignores = {}
+
+# Same as Black.
+line-length = 88
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+# Assume Python 3.11
+target-version = "py311"

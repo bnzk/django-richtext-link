@@ -1,0 +1,2 @@
+Model based linking for the Quill 2 rich text editor in Django.
+The link dialog is a plain Django admin form - your link model defines the fields.

@@ -1,0 +1,59 @@
+.idea/
+.vscode/
+*.egg-info/
+*.pyc
+*.coverage
+*coverage/
+db.sqlite
+dist/
+docs/_build/
+.env
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+env/
+bin/
+build/
+develop-eggs/
+dist/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+
+# Translations
+*.mo
+
+# Django stuff:
+*.log
+*.pot
+
+# test project artefacts
+test_app_static/
+
+# Sphinx documentation
+docs/_build/
