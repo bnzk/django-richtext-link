@@ -23,6 +23,6 @@ THE SOFTWARE.
 ----
 
 Quill (https://quilljs.com), bundled unmodified in
-quilljs_link/static/quilljs_link/vendor/quill/, is licensed under the
+richtext_link/static/richtext_link/vendor/quill/, is licensed under the
 BSD 3-Clause License, Copyright (c) 2017 Slab, Inc., 2014 Jason Chen,
 2013 salesforce.com. See the license notice in the bundled files.

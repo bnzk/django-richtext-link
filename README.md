@@ -1,12 +1,12 @@
-# django-quilljs-link
+# django-richtext-link
 
-[![CI](https://img.shields.io/github/actions/workflow/status/bnzk/django-quilljs-link/ci.yml?style=flat-square&logo=github "CI")](https://github.com/bnzk/django-quilljs-link/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/pypi/v/django-quilljs-link.svg?style=flat-square "Version")](https://pypi.python.org/pypi/django-quilljs-link/)
-[![Licence](https://img.shields.io/github/license/bnzk/django-quilljs-link.svg?style=flat-square "Licence")](https://pypi.python.org/pypi/django-quilljs-link/)
-[![PyPI Downloads](https://img.shields.io/pypi/dm/django-quilljs-link.svg?style=flat-square "PyPI Downloads")](https://pypi.python.org/pypi/django-quilljs-link/)
+[![CI](https://img.shields.io/github/actions/workflow/status/bnzk/django-richtext-link/ci.yml?style=flat-square&logo=github "CI")](https://github.com/bnzk/django-richtext-link/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/pypi/v/django-richtext-link.svg?style=flat-square "Version")](https://pypi.python.org/pypi/django-richtext-link/)
+[![Licence](https://img.shields.io/github/license/bnzk/django-richtext-link.svg?style=flat-square "Licence")](https://pypi.python.org/pypi/django-richtext-link/)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/django-richtext-link.svg?style=flat-square "PyPI Downloads")](https://pypi.python.org/pypi/django-richtext-link/)
 
-Model based linking for the [Quill 2](https://quilljs.com) rich text editor in
-Django - the spiritual successor of
+Model based linking for rich text editors in Django - **TipTap 3** (default),
+**Quill 2**, and bring-your-own **CKEditor 5** - the spiritual successor of
 [django-ckeditor-link](https://github.com/bnzk/django-ckeditor-link).
 
 The link dialog is a plain Django admin form: **your link model defines the
@@ -17,29 +17,35 @@ stay correct when the target moves.
 
 Included:
 
-- a Quill 2 widget (`QuillWidget`), form field (`QuillFormField`) and model
-  field (`QuillField`), storing **plain HTML** - Quill 2.x is bundled, no
-  further dependencies
-- the `djangolink` Quill module + link blot (vanilla JS, usable with your own
-  Quill build)
+- a widget (`RichtextWidget`), form field (`RichtextFormField`) and model
+  field (`RichtextField`), storing **plain HTML** - TipTap 3.x and Quill 2.x
+  are bundled, no further dependencies, the `editor` config key picks one;
+  CKEditor 5 is supported bring-your-own (it is GPL/commercially licensed
+  and not bundled)
+- TipTap extras: per block **classes** on paragraphs/headings
+  (`blockClasses`), `enterMode: "br"` (CKEditor ENTER_BR style)
+- the django link dialog as editor modules/extensions (vanilla JS, usable
+  with your own TipTap or Quill build)
 - `DjangoLinkAdmin`, rendering your link model's admin form in an iframe
-  dialog, with an ajax `verify/` endpoint
-- the `quilljs_link_add_links` template filter, resolving stored links at
+  dialog, with ajax `verify/` and `search/` endpoints (quick search over all
+  fk link targets, based on each target admin's `search_fields`)
+- the `richtext_link_add_links` template filter, resolving stored links at
   render time
-- optional: abstract link model base (`quilljs_link.link_model`)
-- optional: a rebuildable link index (`quilljs_link.link_index`) - "what links
-  here?", link reports, advisory delete protection
-- content compatible with django-ckeditor-link: legacy `data-ckeditor-link`
-  markers are recognized everywhere, and upgraded on the next editor save
+- optional: abstract link model base (`richtext_link.link_model`)
+- optional: a rebuildable link index (`richtext_link.link_index`) - "what
+  links here?", link reports, advisory delete protection
+- content compatible with django-ckeditor-link and django-quilljs-link:
+  legacy `data-ckeditor-link` / `data-quilljs-link` markers are recognized
+  everywhere, and upgraded to `data-richtext-link` on the next editor save
 
 ## Quickstart
 
 Install:
 
 ```bash
-pip install django-quilljs-link
+pip install django-richtext-link
 # lxml + cssselect are needed for the template filter (and the link index):
-pip install django-quilljs-link[templatetag]
+pip install django-richtext-link[templatetag]
 ```
 
 Settings:
@@ -47,12 +53,12 @@ Settings:
 ```python
 INSTALLED_APPS = [
     ...
-    "quilljs_link",
+    "richtext_link",
     # optional, the link index ("what links here?"):
-    "quilljs_link.link_index",
+    "richtext_link.link_index",
 ]
 
-QUILLJS_LINK_MODEL = "my_app.models.LinkModel"
+RICHTEXT_LINK_MODEL = "my_app.models.LinkModel"
 
 # the link dialog is an iframe:
 X_FRAME_OPTIONS = "SAMEORIGIN"
@@ -80,14 +86,14 @@ class LinkModel(models.Model):
 ```
 
 Or start from the included abstract base
-(`quilljs_link.link_model.models.LinkBase`, with free/external/mailto/phone
+(`richtext_link.link_model.models.LinkBase`, with free/external/mailto/phone
 fields and a `link_type` dispatcher).
 
-Register it with `DjangoLinkAdmin` (this also adds the `verify/` endpoint,
-no urls.py include needed):
+Register it with `DjangoLinkAdmin` (this also adds the `verify/` and
+`search/` endpoints, no urls.py include needed):
 
 ```python
-from quilljs_link.admin import DjangoLinkAdmin
+from richtext_link.admin import DjangoLinkAdmin
 
 @admin.register(LinkModel)
 class LinkModelAdmin(DjangoLinkAdmin):
@@ -97,36 +103,85 @@ class LinkModelAdmin(DjangoLinkAdmin):
 Use the field on your models:
 
 ```python
-from quilljs_link.fields import QuillField
+from richtext_link.fields import RichtextField
 
 class Article(models.Model):
-    body = QuillField(default="", blank=True)
+    body = RichtextField(default="", blank=True)
 ```
 
-The editor's dialog urls are derived from `QUILLJS_LINK_MODEL`'s admin
+The editor's dialog urls are derived from `RICHTEXT_LINK_MODEL`'s admin
 automatically. Render the content with resolved links:
 
 ```django
-{% load quilljs_link_tags %}
-{{ article.body|quilljs_link_add_links|safe }}
+{% load richtext_link_tags %}
+{{ article.body|richtext_link_add_links|safe }}
 ```
 
 ## Settings
 
 | Setting | Default | Description |
 |---|---|---|
-| `QUILLJS_LINK_MODEL` | `None` | Dotted path to your link model class. |
-| `QUILLJS_LINK_CONFIGS` | see below | Editor configs, passed to `new Quill(el, config)` as is. |
-| `QUILLJS_LINK_ATTR_MODIFIERS` | `{}` | `{field: format_string}` - recombine data attributes at render time, mostly for MultiWidget fields (e.g. `{"cms_page": "{cms_page_2}"}`). |
-| `QUILLJS_LINK_INDEX_PROTECT` | `False` | link_index: raise when deleting a link target. |
+| `RICHTEXT_LINK_MODEL` | `None` | Dotted path to your link model class. |
+| `RICHTEXT_LINK_CONFIGS` | see below | Editor configs; `RichtextField(config_name="...")` picks one. |
+| `RICHTEXT_LINK_ATTR_MODIFIERS` | `{}` | `{field: format_string}` - recombine data attributes at render time, mostly for MultiWidget fields (e.g. `{"cms_page": "{cms_page_2}"}`). |
+| `RICHTEXT_LINK_INDEX_PROTECT` | `False` | link_index: raise when deleting a link target. |
 
-`QUILLJS_LINK_CONFIGS` mirrors the django-ckeditor `CKEDITOR_CONFIGS` idea -
-a dict of named configs, `QuillField(config_name="...")` picks one, `"default"`
-is the default:
+## Editors
+
+Each config in `RICHTEXT_LINK_CONFIGS` selects its editor via the `editor`
+key: `"tiptap"` (the default) or `"quilljs"`. The widget only loads the
+assets of the configured editor.
+
+### TipTap (default)
+
+TipTap configs use django-richtext-link's own schema (TipTap itself is
+headless and not JSON-configurable):
 
 ```python
-QUILLJS_LINK_CONFIGS = {
+RICHTEXT_LINK_CONFIGS = {
     "default": {
+        "editor": "tiptap",
+        "toolbar": [
+            ["bold", "italic"],
+            ["h2", "h3", "p"],
+            ["bulletList", "orderedList"],
+            ["djangolink", "clear"],
+        ],
+        "headingLevels": [2, 3],
+        "enterMode": "p",
+        "blockClasses": {
+            "paragraph": [["", "Default"], ["intro", "Intro"]],
+            "heading": [["", "Default"], ["fancy", "Fancy"]],
+        },
+        # iframeUrl/verifyUrl are auto derived from RICHTEXT_LINK_MODEL's
+        # admin when not set; omit the key entirely for no link feature:
+        "djangolink": {},
+    },
+}
+```
+
+| key | default | description |
+|---|---|---|
+| `toolbar` | see above | button groups; items: `bold`, `italic`, `underline`, `strike`, `h1`…`h6`, `p`, `bulletList`, `orderedList`, `blockquote`, `djangolink`, `clear`, `undo`, `redo`, `blockClass` |
+| `headingLevels` | `[2, 3]` | allowed heading levels |
+| `enterMode` | `"p"` | `"p"`: Enter = new paragraph, Shift+Enter = `<br>`; `"br"`: Enter inserts `<br>` (CKEditor ENTER_BR style; lists/code keep their Enter behavior) |
+| `blockClasses` | — | per node type `[value, label]` class choices, shown as a toolbar select; the `class` attribute round-trips through the stored HTML |
+| `djangolink` | — | `{iframeUrl, verifyUrl, fallbackField, linkText, okLabel, cancelLabel, errorMessage}` |
+
+`fallbackField` (default `"external"`) is where a plain `<a href>`'s url
+lands when editing pre-django-link content; `linkText` (default `"link"`)
+is inserted when nothing is selected.
+
+### Quill
+
+Quill configs are passed to `new Quill(el, config)` as is (minus our
+`editor` key) - the `djangolink` module options live in `modules`:
+
+```python
+RICHTEXT_LINK_CONFIGS = {
+    "default": { ... },  # tiptap, as above
+    "legacy": {
+        "editor": "quilljs",
         "theme": "snow",
         "modules": {
             "toolbar": [
@@ -134,19 +189,59 @@ QUILLJS_LINK_CONFIGS = {
                 [{"list": "ordered"}, {"list": "bullet"}],
                 ["djangolink", "clean"],
             ],
-            # iframeUrl/verifyUrl are auto derived from QUILLJS_LINK_MODEL's
-            # admin when not set:
             "djangolink": {},
         },
     },
 }
 ```
 
-`djangolink` module options: `iframeUrl`, `verifyUrl`, `fallbackField`
-(default `"external"` - where a plain `<a href>`'s url lands when editing
-pre-django-link content), `linkText` (default `"link"` - inserted when
-nothing is selected), `okLabel`, `cancelLabel`, `errorMessage`,
-`suppressStockTooltip` (default `true`).
+Note: Quill has no soft line breaks (`<br>`) and no per block classes -
+that's why TipTap is the default.
+
+### CKEditor 5 (bring your own)
+
+django-richtext-link is MIT licensed and ships **no CKEditor code**:
+CKEditor 5 is GPL-2.0-or-later (or commercially) licensed, and since v44
+requires a `licenseKey` - `"GPL"` (the adapter's default, shows a small
+"Powered by CKEditor" logo) or your commercial key. Self-host the official
+`ckeditor5` npm package's `dist/browser/` files, or serve them via jsdelivr
+(below); `cdn.ckeditor.com` is part of CKEditor's cloud plans.
+
+```python
+RICHTEXT_LINK_CONFIGS = {
+    "default": { ... },  # tiptap, as above
+    "ckeditor": {
+        "editor": "ckeditor5",
+        # optional: the widget loads these for you (absolute url or static
+        # path); omit = load a build exposing window.CKEDITOR yourself
+        "assets": {
+            "js": "https://cdn.jsdelivr.net/npm/ckeditor5@48.3.1/dist/browser/ckeditor5.umd.js",
+            "css": "https://cdn.jsdelivr.net/npm/ckeditor5@48.3.1/dist/browser/ckeditor5.css",
+        },
+        "licenseKey": "GPL",
+        # plugin names resolved against window.CKEDITOR; default:
+        # ["Essentials", "Paragraph", "Heading", "Bold", "Italic", "List",
+        #  "LinkEditing"] - LinkEditing (not "Link") on purpose: no LinkUI
+        # balloon interfering with the django link dialog
+        # "plugins": [...],
+        "enterMode": "p",  # or "br": enter inserts <br>
+        "djangolink": {},  # urls auto derived, like tiptap
+        "ckeditor": {      # native CKEditor 5 config, passed through as is
+            "toolbar": ["heading", "|", "bold", "italic", "|",
+                        "bulletedList", "numberedList", "|", "djangolink"],
+        },
+    },
+}
+```
+
+Block classes work via CKEditor's native (free) **Style** feature - the
+tiptap `blockClasses` equivalent is plain passthrough config: add `"Style"`
+and `"GeneralHtmlSupport"` to `plugins`, `"style"` to the toolbar, and e.g.
+`"style": {"definitions": [{"name": "Intro", "element": "p", "classes":
+["intro"]}]}` to `ckeditor`. Do not `htmlSupport.allow` `data-*` attributes
+on `a` - the adapter owns those.
+
+Links are edited via the `djangolink` toolbar button or double click.
 
 ## Quick search in the link dialog
 
@@ -166,11 +261,11 @@ the target model admins are respected.
 For `link_type` dispatcher style link models (like the contrib `LinkBase`),
 [django-formfieldstash](https://github.com/bnzk/django-formfieldstash) makes
 the dialog show only the field of the selected type. The contrib
-`quilljs_link.link_model.admin.LinkBaseAdmin` applies it automatically when
+`richtext_link.link_model.admin.LinkBaseAdmin` applies it automatically when
 installed (and is a plain `DjangoLinkAdmin` when not):
 
 ```bash
-pip install django-quilljs-link[linkmodel]
+pip install django-richtext-link[linkmodel]
 ```
 
 ```python
@@ -181,21 +276,37 @@ INSTALLED_APPS = [
 ```
 
 ```python
-from quilljs_link.link_model.admin import LinkBaseAdmin
+from richtext_link.link_model.admin import LinkBaseAdmin
 
 @admin.register(LinkModel)
 class LinkModelAdmin(LinkBaseAdmin):
     pass
 ```
 
-## Using your own Quill build
+## Using your own editor build
 
-The Django side does not care where Quill comes from. Load
-`quilljs_link/js/quilljs-link.js` (or copy it into your bundle), then:
+The Django side does not care where the editor comes from.
+
+**TipTap**: load `richtext_link/js/richtext-link-core.js` and
+`richtext_link/js/richtext-link-tiptap.js`, and expose your own
+`@tiptap/*` imports as `window.RichtextLinkTiptap = {Editor, Extension,
+Mark, Node, mergeAttributes, StarterKit, Link}` (what the vendored bundle
+does, see `frontend/tiptap-entry.js`). Then either let
+`RichtextLink.tiptap.createEditor(el, config, {content, onUpdate})` build
+toolbar and all, or use `RichtextLink.tiptap.buildExtensions(config)` with
+your own `Editor` setup.
+
+**CKEditor 5**: anything exposing `window.CKEDITOR` with `ClassicEditor`,
+`Plugin`, `ButtonView` and your plugins works (the UMD build does). Load
+`richtext-link-core.js` + `richtext-link-ckeditor5.js`, then use
+`RichtextLink.ckeditor5.createEditor(el, config, {content, onUpdate})`, or
+`buildConfig`/`buildDjangoLinkPlugin` with your own `ClassicEditor.create`.
+
+**Quill**: load `richtext-link-core.js` and `richtext-link-quill.js`, then:
 
 ```js
 import Quill from "quill";
-window.QuilljsLink.register(Quill); // link blot + "djangolink" module + icon
+window.RichtextLink.quill.register(Quill); // link blot + "djangolink" module + icon
 
 new Quill(el, {
   theme: "snow",
@@ -209,69 +320,93 @@ new Quill(el, {
 });
 ```
 
-Sync `quill.getSemanticHTML()` into your form field - or use
-`quilljs_link/js/widget-init.js` as a reference.
+Sync the editor's html into your form field - or use
+`richtext_link/js/widget-init.js` as a reference.
 
 ## Link index: what links here?
 
-With `quilljs_link.link_index` in `INSTALLED_APPS` (and a `migrate`), an index
-of all links in `QuillField` contents is maintained on every save - browsable
-in the admin (read only), queryable in code:
+With `richtext_link.link_index` in `INSTALLED_APPS` (and a `migrate`), an
+index of all links in `RichtextField` contents is maintained on every save -
+browsable in the admin (read only), queryable in code:
 
 ```python
-from quilljs_link.link_index.index import get_inbound_links, register
+from richtext_link.link_index.index import get_inbound_links, register
 
 get_inbound_links(some_page)  # queryset of LinkIndexEntry targeting some_page
 ```
 
 - the index is **derived data**: rebuild it anytime with
-  `./manage.py rebuild_quilljs_link_index` (also needed after `loaddata`,
+  `./manage.py rebuild_richtext_link_index` (also needed after `loaddata`,
   fixtures are skipped on purpose, and after `queryset.update()`, which
   bypasses signals)
-- models using `QuillField` are picked up automatically; for plain
-  `TextField` + `QuillWidget` combinations, call
+- models using `RichtextField` are picked up automatically; for plain
+  `TextField` + `RichtextWidget` combinations, call
   `register(MyModel, ["my_field"])` (e.g. in `AppConfig.ready`)
-- `QUILLJS_LINK_INDEX_PROTECT = True` raises
+- `RICHTEXT_LINK_INDEX_PROTECT = True` raises
   `LinkedObjectProtectedError` when a link target is deleted - advisory
   protection, based on the index
 
+## Migrating from django-quilljs-link 0.1.0
+
+Hard rename, **content needs no migration** - `data-quilljs-link` markers
+are read forever and upgraded on the next editor save. In code:
+
+- `pip uninstall django-quilljs-link`, install `django-richtext-link`
+- `INSTALLED_APPS`: `quilljs_link*` → `richtext_link*`
+- settings: `QUILLJS_LINK_*` → `RICHTEXT_LINK_*`; `QUILLJS_LINK_CONFIGS`
+  entries keep working as quill configs when you add `"editor": "quilljs"`
+  (the new default editor is TipTap)
+- fields/widgets: `QuillField/QuillFormField/QuillWidget` →
+  `RichtextField/RichtextFormField/RichtextWidget`
+- template filter: `{% load quilljs_link_tags %}` /
+  `|quilljs_link_add_links` → `{% load richtext_link_tags %}` /
+  `|richtext_link_add_links`
+- link index: `./manage.py migrate` creates the new table, then run
+  `./manage.py rebuild_richtext_link_index` once; the old
+  `quilljs_link_index_linkindexentry` table stays behind - drop it manually
+  or leave it
+
 ## Migrating from django-ckeditor-link
 
-Content works unchanged: the editor and the template filter both recognize
-`data-ckeditor-link` markers. Links are upgraded to `data-quilljs-link` the
-next time an editor saves them - the filter accepts both, forever.
+Content works unchanged: the editors and the template filter recognize
+`data-ckeditor-link` markers, links upgrade to `data-richtext-link` on the
+next editor save. Rename settings (`CKEDITOR_LINK_MODEL` →
+`RICHTEXT_LINK_MODEL` etc.), swap `RichTextField` for `RichtextField`, use
+the `richtext_link_add_links` filter, keep `X_FRAME_OPTIONS = "SAMEORIGIN"`.
+Plain pre-django-link links: the `fallbackField` option prefills a field of
+your choice with the old `href` when such a link is edited.
 
-- rename settings: `CKEDITOR_LINK_MODEL` → `QUILLJS_LINK_MODEL`,
-  `CKEDITOR_LINK_ATTR_MODIFIERS` → `QUILLJS_LINK_ATTR_MODIFIERS`
-- template filter: `ckeditor_link_add_links` → `quilljs_link_add_links`
-- replace `RichTextField` with `QuillField`, drop the `CKEDITOR_CONFIGS`
-  wiring (dialog urls are now derived automatically)
-- keep `X_FRAME_OPTIONS = "SAMEORIGIN"`
-- pre-django-link plain links: the `fallbackField` module option prefills
-  a field of your choice with the old `href` when such a link is edited
-
-One heads-up that applies to both packages: the stored `data-*` attributes are
-your link model's **field names**. Renaming a link model field silently orphans
-that attribute in existing content - migrate your content when renaming.
+One heads-up that applies to all generations of this package: the stored
+`data-*` attributes are your link model's **field names**. Renaming a link
+model field silently orphans that attribute in existing content - migrate
+your content when renaming.
 
 ## Development / running the test project
 
 ```bash
-git clone https://github.com/bnzk/django-quilljs-link.git
-cd django-quilljs-link
+git clone https://github.com/bnzk/django-richtext-link.git
+cd django-richtext-link
 pip install -r requirements_dev.txt
 ./manage.py migrate
 ./manage.py createsuperuser
 ./manage.py loaddata test_app
-./manage.py rebuild_quilljs_link_index
+./manage.py rebuild_richtext_link_index
 ./manage.py runserver
 ```
 
-Then check `/admin/test_app/testmodel/2/change/` (editor + dialog) and
-`/testmodel/2/` (rendered output). Tests: `./manage.py test` (the Selenium
-editor tests need Firefox + geckodriver and are skipped otherwise; set
-`QUILLJS_LINK_SKIP_SELENIUM=1` to skip them explicitly), or `tox`.
+Then check `/admin/test_app/testmodel/2/change/` (TipTap + Quill + CKEditor
+editors, dialog) and `/testmodel/2/` (rendered output). For the CKEditor 5
+editor and its Selenium tests, run `richtext_link/tests/get_ckeditor5.sh`
+once (downloads the GPL licensed build into a gitignored dir - it is not
+part of this package). Tests: `./manage.py test`
+(the Selenium editor tests need Firefox + geckodriver and are skipped
+otherwise; set `RICHTEXT_LINK_SKIP_SELENIUM=1` to skip them explicitly), or
+`tox`.
 
-Quill 2.x is vendored unmodified, see
-`quilljs_link/static/quilljs_link/vendor/quill/VENDOR.md`. django-quilljs-link
-is MIT licensed, the bundled Quill is BSD-3-Clause.
+Vendored editors: Quill 2.x unmodified
+(`richtext_link/static/richtext_link/vendor/quill/VENDOR.md`); TipTap 3.x as
+our own esbuild bundle of unmodified packages
+(`.../vendor/tiptap/VENDOR.md`) - TipTap ships no browser build, rebuild
+with `cd frontend && npm ci && npm run build` (maintainers only, hosts
+install nothing). django-richtext-link is MIT licensed, bundled Quill is
+BSD-3-Clause, bundled TipTap is MIT.

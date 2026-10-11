@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "@tiptap/core": "3.31.4",
+    "@tiptap/extension-link": "3.31.4",
+    "@tiptap/pm": "3.31.4",
+    "@tiptap/starter-kit": "3.31.4"
+  },
+  "description": "Build setup for the vendored TipTap bundle (richtext_link/static/richtext_link/vendor/tiptap/). Hosts never need this - only maintainers, to update TipTap.",
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  },
+  "name": "richtext-link-frontend",
+  "private": true,
+  "scripts": {
+    "build": "node build.mjs"
+  }
+}

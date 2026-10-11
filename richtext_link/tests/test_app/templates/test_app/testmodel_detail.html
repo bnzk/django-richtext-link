@@ -1,0 +1,6 @@
+{% load richtext_link_tags %}
+<h1>{{ object.title }}</h1>
+{{ object.richtext|richtext_link_add_links|safe }}
+{{ object.richtext_second|richtext_link_add_links|safe }}
+{{ object.richtext_quill|richtext_link_add_links|safe }}
+{{ object.richtext_ckeditor|richtext_link_add_links|safe }}

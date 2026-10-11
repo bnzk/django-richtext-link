@@ -10,7 +10,7 @@ git checkout develop
 # merge release changes
 git merge main
 
-# version bump in quilljs_link/__init__.py
+# version bump in richtext_link/__init__.py
 # last chance for changelog
 git commit -am'x.x.x release'
 git tag x.x.x

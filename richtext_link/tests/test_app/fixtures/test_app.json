@@ -1,0 +1,35 @@
+[
+  {
+    "fields": {
+      "richtext": "<p>None</p>",
+      "richtext_ckeditor": "",
+      "richtext_quill": "",
+      "richtext_second": "<p><a data-quilljs-link=\"true\" data-email=\"\" data-external_url=\"\" data-target=\"_blank\" data-testmodel=\"69\" href=\"sadv\">link with not existing fk!</a></p>",
+      "title": "Test 2"
+    },
+    "model": "test_app.testmodel",
+    "pk": 1
+  },
+  {
+    "fields": {
+      "richtext": "<p>One Two <a data-richtext-link=\"true\" data-email=\"\" data-external_url=\"\" data-target=\"_blank\" data-when=\"2018-02-03\" href=\"http://no-link-given.com/\">Link One (Date Link, haha)</a></p><p><a data-richtext-link=\"true\" data-email=\"\" data-external_url=\"\" data-target=\"\" data-testmodel=\"1\" href=\"http://no-link-given.com/\">Link Two (Foreign Key)</a></p><p>what</p>",
+      "richtext_ckeditor": "<p>CKEditor content <a data-richtext-link=\"true\" data-email=\"\" data-external_url=\"\" data-target=\"\" data-testmodel=\"1\" href=\"http://no-link-given.com/\">ck fk link</a></p>",
+      "richtext_quill": "<p>Quill content <a data-quilljs-link=\"true\" data-email=\"\" data-external_url=\"\" data-target=\"\" data-testmodel=\"1\" href=\"http://no-link-given.com/\">old quill marker link</a></p>",
+      "richtext_second": "<p><a data-richtext-link=\"true\" data-email=\"\" data-external_url=\"\" data-target=\"targetvalue\" data-testmodel=\"\" href=\"http://no-link-given.com/\">Second RT, first link</a> <a data-richtext-link=\"true\" data-email=\"\" data-external_url=\"sadv\" data-target=\"sdvatest\" data-testmodel=\"1\" href=\"sadv\">link</a></p>",
+      "title": "Testing different Link Form Widgets"
+    },
+    "model": "test_app.testmodel",
+    "pk": 2
+  },
+  {
+    "fields": {
+      "richtext": "<p>Old but gold <a data-ckeditor-link=\"true\" data-email=\"\" data-external_url=\"\" data-target=\"_blank\" data-testmodel=\"1\" href=\"http://no-link-given.com/\">legacy link</a> and a plain <a href=\"https://www.example.com/\">untouched link</a>.</p>",
+      "richtext_ckeditor": "<p>Very old <a data-ckeditor-link=\"true\" data-email=\"\" data-external_url=\"\" data-target=\"_blank\" data-testmodel=\"1\" href=\"http://no-link-given.com/\">ck legacy link</a> and a plain <a href=\"https://www.example.com/\">plain link</a>.</p>",
+      "richtext_quill": "",
+      "richtext_second": "",
+      "title": "Legacy CKEditor content"
+    },
+    "model": "test_app.testmodel",
+    "pk": 3
+  }
+]

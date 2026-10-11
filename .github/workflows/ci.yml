@@ -16,6 +16,8 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Install Tox and any other packages
         run: pip install tox tox-gh-actions
+      - name: Fetch CKEditor 5 for the selenium tests (GPL, not vendored)
+        run: ./richtext_link/tests/get_ckeditor5.sh
       - name: Run Tox
         # Run tox using the version of Python in `PATH`
         run: tox
@@ -33,6 +35,8 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Install tox
         run: pip install tox
+      - name: Fetch CKEditor 5 for the selenium tests (GPL, not vendored)
+        run: ./richtext_link/tests/get_ckeditor5.sh
       - name: Run tox with coverage
         run: tox -e py313-django52-coverage
 

@@ -57,3 +57,5 @@ test_app_static/
 
 # Sphinx documentation
 docs/_build/
+node_modules/
+richtext_link/tests/test_app/static/test_ckeditor5/

@@ -1,0 +1,230 @@
+/* widget */
+
+.richtext-link-widget {
+  max-width: 60em;
+}
+
+.richtext-link-editor {
+  min-height: 8em;
+  background: var(--body-bg, #fff);
+  color: var(--body-fg, #333);
+  font-size: 14px;
+}
+
+.richtext-link-widget .ql-toolbar,
+.richtext-link-widget .ql-container {
+  border-color: var(--border-color, #ccc);
+}
+
+/* tiptap editor chrome (tiptap is headless - this is our ui) */
+
+.richtext-link-tiptap {
+  border: 1px solid var(--border-color, #ccc);
+  border-radius: 4px;
+  background: var(--body-bg, #fff);
+}
+
+.richtext-link-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--border-color, #ccc);
+  background: var(--darkened-bg, #f8f8f8);
+  border-radius: 4px 4px 0 0;
+}
+
+.richtext-link-toolbar__group {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.richtext-link-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 24px;
+  padding: 0 5px;
+  background: transparent;
+  color: var(--body-fg, #333);
+  border: 1px solid transparent;
+  border-radius: 3px;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.richtext-link-toolbar button[data-item="bold"] {
+  font-weight: bold;
+}
+
+.richtext-link-toolbar button[data-item="italic"] {
+  font-style: italic;
+}
+
+.richtext-link-toolbar button[data-item="underline"] {
+  text-decoration: underline;
+}
+
+.richtext-link-toolbar button[data-item="strike"] {
+  text-decoration: line-through;
+}
+
+.richtext-link-toolbar button:hover {
+  border-color: var(--border-color, #ccc);
+}
+
+.richtext-link-toolbar button.is-active {
+  background: var(--selected-bg, #e4f2ff);
+  border-color: var(--border-color, #ccc);
+}
+
+.richtext-link-blockclass {
+  height: 24px;
+  font-size: 12px;
+  padding: 0 4px;
+}
+
+.richtext-link-content .tiptap {
+  min-height: 8em;
+  padding: 8px 12px;
+  outline: none;
+  background: var(--body-bg, #fff);
+  color: var(--body-fg, #333);
+  font-size: 14px;
+  border-radius: 0 0 4px 4px;
+}
+
+.richtext-link-content .tiptap p:first-child,
+.richtext-link-content .tiptap h1:first-child,
+.richtext-link-content .tiptap h2:first-child,
+.richtext-link-content .tiptap h3:first-child {
+  margin-top: 0;
+}
+
+.richtext-link-content .tiptap a {
+  color: var(--link-fg, #447e9b);
+  text-decoration: underline;
+}
+
+/* dialog */
+
+.richtext-link-dialog {
+  width: min(720px, 90vw);
+  height: min(520px, 85vh);
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  box-shadow: 0 4px 40px rgba(0, 0, 0, 0.3);
+  background: var(--body-bg, #fff);
+  color: var(--body-fg, #333);
+  display: flex;
+  flex-direction: column;
+  /* dialog[open] display gets overridden below */
+}
+
+.richtext-link-dialog:not([open]) {
+  display: none;
+}
+
+.richtext-link-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.richtext-link-dialog__body {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0;
+}
+
+.richtext-link-dialog__body iframe {
+  flex: 1 1 auto;
+  width: 100%;
+  border: none;
+}
+
+.richtext-link-dialog__buttons {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 13px;
+  border-top: 1px solid var(--hairline-color, #e8e8e8);
+}
+
+.richtext-link-dialog__message {
+  flex: 0 0 auto;
+  padding: 6px 13px;
+  color: var(--error-fg, #ba2121);
+}
+
+.richtext-link-dialog__message:empty {
+  display: none;
+}
+
+/* admin dark mode fixes for the snow theme (django admin css vars) */
+
+html[data-theme="dark"] .ql-snow .ql-stroke,
+html[data-theme="dark"] .ql-snow .ql-picker {
+  stroke: var(--body-fg, #eee);
+  color: var(--body-fg, #eee);
+}
+
+html[data-theme="dark"] .ql-snow .ql-fill {
+  fill: var(--body-fg, #eee);
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme="auto"] .ql-snow .ql-stroke,
+  html[data-theme="auto"] .ql-snow .ql-picker {
+    stroke: var(--body-fg, #eee);
+    color: var(--body-fg, #eee);
+  }
+
+  html[data-theme="auto"] .ql-snow .ql-fill {
+    fill: var(--body-fg, #eee);
+  }
+}
+
+/* ckeditor5 (bring your own build - this is glue only, cke ships its theme) */
+
+.richtext-link-ckeditor5 .ck-editor__editable_inline {
+  min-height: 8em;
+}
+
+/* best effort admin dark mode: remap the key cke custom properties */
+
+html[data-theme="dark"]
+  .richtext-link-ckeditor5
+  .ck.ck-editor__main
+  > .ck-editor__editable,
+html[data-theme="dark"] .richtext-link-ckeditor5 .ck.ck-toolbar {
+  --ck-color-base-background: var(--body-bg, #121212);
+  --ck-color-base-text: var(--body-fg, #eee);
+  --ck-color-toolbar-background: var(--darkened-bg, #212121);
+  --ck-color-base-border: var(--border-color, #444);
+  --ck-color-toolbar-border: var(--border-color, #444);
+  --ck-color-text: var(--body-fg, #eee);
+  --ck-color-button-default-background: transparent;
+  background: var(--body-bg, #121212);
+  color: var(--body-fg, #eee);
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme="auto"]
+    .richtext-link-ckeditor5
+    .ck.ck-editor__main
+    > .ck-editor__editable,
+  html[data-theme="auto"] .richtext-link-ckeditor5 .ck.ck-toolbar {
+    --ck-color-base-background: var(--body-bg, #121212);
+    --ck-color-base-text: var(--body-fg, #eee);
+    --ck-color-toolbar-background: var(--darkened-bg, #212121);
+    --ck-color-base-border: var(--border-color, #444);
+    --ck-color-toolbar-border: var(--border-color, #444);
+    --ck-color-text: var(--body-fg, #eee);
+    --ck-color-button-default-background: transparent;
+    background: var(--body-bg, #121212);
+    color: var(--body-fg, #eee);
+  }
+}

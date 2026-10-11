@@ -5,7 +5,7 @@ import sys
 if __name__ == "__main__":
     os.environ.setdefault(
         "DJANGO_SETTINGS_MODULE",
-        "quilljs_link.tests.settings",
+        "richtext_link.tests.settings",
     )
 
     from django.core.management import execute_from_command_line
