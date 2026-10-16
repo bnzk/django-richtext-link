@@ -21,6 +21,16 @@ def get_link_model_path():
     return getattr(settings, "RICHTEXT_LINK_MODEL", None)
 
 
+def get_sanitizer_path():
+    """
+    Optional dotted path to the project's html sanitize callable
+    (html -> html). When set, a django system check verifies at startup that
+    the sanitizer lets the data-richtext-link payload survive - see
+    richtext_link.checks.
+    """
+    return getattr(settings, "RICHTEXT_LINK_SANITIZER", None)
+
+
 def get_attr_modifiers():
     """
     dict of {field_name: format_string} - format_string is formatted with all

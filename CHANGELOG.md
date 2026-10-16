@@ -2,6 +2,17 @@
 
 ## 0.3.0 (unreleased)
 
+- **new stored link format**: the marker attribute carries the whole link
+  data as json (`data-richtext-link='{"page":"3"}'`) - a single attribute to
+  whitelist in sanitizers/html schemas, unambiguous ownership of the data.
+  The 0.2 format (marker `"true"` + one `data-*` attribute per field) and
+  the legacy `data-quilljs-link`/`data-ckeditor-link` markers are read
+  forever and upgraded on the next editor save - content needs no migration
+- startup system checks (`richtext_link.E001-E006`): optional
+  `RICHTEXT_LINK_SANITIZER` round trips a probe link through your sanitizer
+  (strong failure when the payload would not survive), editor configs are
+  validated (unknown editor, ckeditor5 htmlSupport rules touching the
+  marker)
 - CKEditor 5 adapter, **bring your own build** (CKEditor 5 is GPL/commercial
   and not bundled with this MIT package): `editor: "ckeditor5"` configs with
   an `assets` convenience (widget loads your CKE5 urls), `licenseKey`

@@ -1,6 +1,8 @@
 """Settings that need to be set in order to run the tests."""
 import os
 
+from django.urls import reverse_lazy
+
 DEBUG = True
 
 HEADLESS_TESTING = True
@@ -28,6 +30,19 @@ RICHTEXT_LINK_CONFIGS = {
             "heading": [["", "Default"], ["fancy", "Fancy"]],
         },
         "djangolink": {},
+    },
+    # the contrib link_model dialog (LinkBaseAdmin: link_type select +
+    # formfieldstash), explicit urls instead of the RICHTEXT_LINK_MODEL default
+    "contrib": {
+        "editor": "tiptap",
+        "toolbar": [
+            ["bold", "italic"],
+            ["djangolink", "clear"],
+        ],
+        "djangolink": {
+            "iframeUrl": reverse_lazy("admin:test_app_contriblinkmodel_add"),
+            "verifyUrl": reverse_lazy("admin:test_app_contriblinkmodel_verify"),
+        },
     },
     "quill": {
         "editor": "quilljs",

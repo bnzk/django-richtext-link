@@ -8,10 +8,10 @@ from richtext_link.link_index.models import LinkIndexEntry
 from richtext_link.tests.test_app.models import TestModel
 
 DJANGO_LINK_HTML = (
-    '<p><a data-richtext-link="true" data-testmodel="{pk}" '
+    '<p><a data-richtext-link=\'{{"testmodel":"{pk}"}}\' '
     'href="/testmodel/{pk}/">fk link</a> and '
-    '<a data-richtext-link="true" data-external_url="http://x.com/" '
-    'data-testmodel="" href="http://x.com/">external</a></p>'
+    '<a data-richtext-link=\'{{"external_url":"http://x.com/"}}\' '
+    'href="http://x.com/">external</a></p>'
 )
 
 
@@ -71,6 +71,20 @@ class LinkIndexTests(TestCase):
         self.assertEqual(inbound.count(), 1)
         self.assertEqual(inbound.get().source_object_id, str(source.pk))
         self.assertEqual(index.get_inbound_links(source).count(), 0)
+
+    def test_legacy_attr_format_indexed(self):
+        """django-richtext-link 0.2 format: marker "true" + data-* attributes"""
+        source = self.create_source(
+            richtext=(
+                f'<p><a data-richtext-link="true" '
+                f'data-testmodel="{self.target.pk}" href="x">attr format</a></p>'
+            )
+        )
+        self.assertEqual(index.get_inbound_links(self.target).count(), 1)
+        self.assertEqual(
+            index.get_inbound_links(self.target).get().source_object_id,
+            str(source.pk),
+        )
 
     def test_legacy_ckeditor_marker_indexed(self):
         source = self.create_source(

@@ -47,11 +47,14 @@
     "djangolink",
   ];
 
+  // ckeditor's IconView parses this with DOMParser as image/svg+xml, so the
+  // xmlns is mandatory; the explicit fill="none" per element keeps the lark
+  // theme's `:not([fill]) {fill: currentColor}` from filling the stroke paths
   var linkIcon =
-    '<svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4">' +
-    '<line x1="7" x2="11" y1="7" y2="11"></line>' +
-    '<path d="M8.9,4.577a3.476,3.476,0,0,1,.36,4.679A3.476,3.476,0,0,1,4.577,8.9C3.185,7.5,2.035,6.4,4.217,4.217S7.5,3.185,8.9,4.577Z"></path>' +
-    '<path d="M13.423,9.1a3.476,3.476,0,0,0-4.679-.36,3.476,3.476,0,0,0,.36,4.679c1.392,1.392,2.5,2.542,4.679.36S14.815,10.5,13.423,9.1Z"></path>' +
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4">' +
+    '<line x1="7" x2="11" y1="7" y2="11" fill="none"></line>' +
+    '<path fill="none" d="M8.9,4.577a3.476,3.476,0,0,1,.36,4.679A3.476,3.476,0,0,1,4.577,8.9C3.185,7.5,2.035,6.4,4.217,4.217S7.5,3.185,8.9,4.577Z"></path>' +
+    '<path fill="none" d="M13.423,9.1a3.476,3.476,0,0,0-4.679-.36,3.476,3.476,0,0,0,.36,4.679c1.392,1.392,2.5,2.542,4.679.36S14.815,10.5,13.423,9.1Z"></path>' +
     '<circle cx="15" cy="3.5" r="2" fill="currentColor" stroke="none"></circle>' +
     "</svg>";
 
@@ -119,8 +122,8 @@
       _defineConverters() {
         var conversion = this.editor.conversion;
 
-        // upcast: read all marker generations, strip the markers, collect
-        // the data-* bag - legacy content is upgraded on the next save
+        // upcast: read all marker formats, strip the markers - legacy
+        // content is upgraded to the json payload on the next save
         conversion.for("upcast").add(function (dispatcher) {
           dispatcher.on(
             "element:a",
@@ -132,15 +135,29 @@
               if (!markers.length) {
                 return; // plain link: stock handling
               }
-              var attrs = {};
+              var attrs = null;
               var consumed = markers.slice();
-              for (var key of viewItem.getAttributeKeys()) {
-                if (
-                  key.indexOf("data-") === 0 &&
-                  RichtextLink.MARKERS.indexOf(key) < 0
-                ) {
-                  attrs[key.slice("data-".length)] = viewItem.getAttribute(key);
-                  consumed.push(key);
+              var markerValue = viewItem.getAttribute(RichtextLink.MARKER);
+              if (markerValue && markerValue.charAt(0) === "{") {
+                // current format: json payload in the marker attribute
+                try {
+                  attrs = JSON.parse(markerValue);
+                } catch (e) {
+                  attrs = null; // defensive: mangled content
+                }
+              }
+              if (!attrs || typeof attrs !== "object") {
+                // legacy formats: one data-* attribute per field
+                attrs = {};
+                for (var key of viewItem.getAttributeKeys()) {
+                  if (
+                    key.indexOf("data-") === 0 &&
+                    RichtextLink.MARKERS.indexOf(key) < 0
+                  ) {
+                    attrs[key.slice("data-".length)] =
+                      viewItem.getAttribute(key);
+                    consumed.push(key);
+                  }
                 }
               }
               conversionApi.consumable.consume(viewItem, {
@@ -163,8 +180,8 @@
           );
         });
 
-        // downcast: write the new marker + data-* bag; priority 5 merges
-        // with LinkEditing's <a linkHref> into one element
+        // downcast: write the marker with its json payload; priority 5
+        // merges with LinkEditing's <a linkHref> into one element
         conversion.for("downcast").attributeToElement({
           model: "linkDjangoAttrs",
           view: function (value, conversionApi) {
@@ -172,10 +189,8 @@
               return undefined;
             }
             var attributes = {};
-            attributes[RichtextLink.MARKER] = "true";
-            Object.keys(value).forEach(function (key) {
-              attributes["data-" + key] = value[key];
-            });
+            attributes[RichtextLink.MARKER] =
+              RichtextLink.serializeLinkData(value);
             return conversionApi.writer.createAttributeElement(
               "a",
               attributes,

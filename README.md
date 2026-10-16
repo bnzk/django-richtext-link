@@ -11,8 +11,9 @@ Model based linking for rich text editors in Django - **TipTap 3** (default),
 
 The link dialog is a plain Django admin form: **your link model defines the
 fields**, its validation, its widgets. Nothing is ever saved to the link table -
-links are stored as `data-*` attributes on the `<a>` tag, and the real `href`
-is resolved at render time. Links to objects (fk to a page, a file, whatever)
+the link data lives as a json payload in a single `data-richtext-link`
+attribute on the `<a>` tag (see "Stored format"), and the real `href` is
+resolved at render time. Links to objects (fk to a page, a file, whatever)
 stay correct when the target moves.
 
 Included:
@@ -123,7 +124,8 @@ automatically. Render the content with resolved links:
 |---|---|---|
 | `RICHTEXT_LINK_MODEL` | `None` | Dotted path to your link model class. |
 | `RICHTEXT_LINK_CONFIGS` | see below | Editor configs; `RichtextField(config_name="...")` picks one. |
-| `RICHTEXT_LINK_ATTR_MODIFIERS` | `{}` | `{field: format_string}` - recombine data attributes at render time, mostly for MultiWidget fields (e.g. `{"cms_page": "{cms_page_2}"}`). |
+| `RICHTEXT_LINK_ATTR_MODIFIERS` | `{}` | `{field: format_string}` - recombine link data at render time, mostly for MultiWidget fields (e.g. `{"cms_page": "{cms_page_2}"}`). |
+| `RICHTEXT_LINK_SANITIZER` | `None` | Dotted path to your html sanitize callable - a startup system check verifies the stored link format survives it (see "Stored format & sanitizers"). |
 | `RICHTEXT_LINK_INDEX_PROTECT` | `False` | link_index: raise when deleting a link target. |
 
 ## Editors
@@ -238,10 +240,59 @@ Block classes work via CKEditor's native (free) **Style** feature - the
 tiptap `blockClasses` equivalent is plain passthrough config: add `"Style"`
 and `"GeneralHtmlSupport"` to `plugins`, `"style"` to the toolbar, and e.g.
 `"style": {"definitions": [{"name": "Intro", "element": "p", "classes":
-["intro"]}]}` to `ckeditor`. Do not `htmlSupport.allow` `data-*` attributes
-on `a` - the adapter owns those.
+["intro"]}]}` to `ckeditor`. Do not `htmlSupport.allow` (or `disallow`)
+`data-*` attributes on `a` - the adapter owns the marker attribute, and a
+startup system check (`richtext_link.E006`) refuses such configs.
 
 Links are edited via the `djangolink` toolbar button or double click.
+
+## Stored format & sanitizers
+
+A django link is stored as plain HTML with one attribute, the marker, whose
+value is the json encoded link data (your link model's field values, sorted
+keys, empty fields omitted):
+
+```html
+<a data-richtext-link='{"link_type":"page","page":"3"}'>read more</a>
+```
+
+The single attribute is the whole contract: whitelisting django links in a
+sanitizer or html schema means allowing exactly `a[href, data-richtext-link]`
+- e.g. nh3/bleach `attributes={"a": {"href", "data-richtext-link"}}`, or
+DOMPurify `ADD_ATTR: ["data-richtext-link"]`.
+
+Read forever, upgraded to the current format on the next editor save:
+
+- `data-richtext-link="true"` plus one `data-<field>` attribute per field
+  (django-richtext-link 0.2)
+- the same attribute format with the `data-quilljs-link` marker
+  (django-quilljs-link 0.1) or the `data-ckeditor-link` marker
+  (django-ckeditor-link)
+
+Two rules keep the format safe:
+
+1. **Never assemble the attribute with string formatting** (f-strings in
+   templates/migration scripts): a quote in a value breaks out of the
+   attribute. Produce content through an editor or lxml, or escape the
+   dumped json (`django.utils.html.escape`). From Python,
+   `richtext_link.utils.serialize_link_data(data)` gives the canonical
+   payload.
+2. **Anything rewriting stored content must keep the marker attribute** - a
+   sanitizer allowlist missing the exception silently destroys link data on
+   the next save. Point `RICHTEXT_LINK_SANITIZER` at your sanitize callable
+   and a Django system check round trips a probe link through it at startup:
+   `runserver`/`migrate` refuse to start when the payload does not survive
+   (`richtext_link.E001-E004`; editor configs are checked too, `E005/E006`).
+
+```python
+# settings.py - optional, strongly recommended when you sanitize content
+RICHTEXT_LINK_SANITIZER = "myproject.utils.sanitize_richtext"
+```
+
+What no check can see: a sanitizer the settings never mention, or content
+edited by an editor without this package's adapters. The link index below is
+the tripwire for those - `rebuild_richtext_link_index` after sanitizer or
+editor changes, and watch the link count.
 
 ## Quick search in the link dialog
 

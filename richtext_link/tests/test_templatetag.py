@@ -90,7 +90,40 @@ class RichtextLinkTemplateTagTests(TestCase):
         result = render_filter("before <p>hello</p>")
         self.assertEqual(result, "before <p>hello</p>")
 
+    def test_json_format(self):
+        """
+        the current format: the marker attribute carries the json payload
+        """
+        result = render_filter(
+            '<p><a data-richtext-link=\'{"external_url":"http://x.com/"}\'>x</a></p>'
+        )
+        self.assertIn('href="http://x.com/"', result)
+        self.assertNotIn("data-richtext-link", result)
+
+    def test_json_format_fk(self):
+        result = render_filter(
+            '<p><a data-richtext-link=\'{"testmodel":"2"}\'>x</a></p>'
+        )
+        self.assertIn('href="/testmodel/2/"', result)
+        self.assertNotIn("data-richtext-link", result)
+        self.assertNotIn("data-testmodel", result)
+
+    def test_json_format_mangled_payload(self):
+        """
+        a broken json payload degrades to the legacy attr format reading
+        """
+        result = render_filter(
+            "<p><a data-richtext-link='{\"external_url\": broken' "
+            'data-external_url="http://x.com/">x</a></p>'
+        )
+        self.assertIn('href="http://x.com/"', result)
+        self.assertNotIn("data-richtext-link", result)
+
     def test_target_from_get_link_target(self):
+        """
+        legacy attr format (django-richtext-link 0.2): marker "true" plus one
+        data-* attribute per field - read forever
+        """
         result = render_filter(
             '<p><a data-richtext-link="true" data-external_url="http://x.com/">x</a></p>'
         )

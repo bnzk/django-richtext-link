@@ -1,5 +1,6 @@
 import contextlib
 import importlib
+import json
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -10,9 +11,12 @@ from django.utils.functional import Promise
 
 from richtext_link import conf
 
-# data-richtext-link is what we write; data-quilljs-link (django-quilljs-link
-# 0.1.0) and data-ckeditor-link (django-ckeditor-link) are read forever -
-# legacy content keeps working and is upgraded on the next editor save.
+# what we write: the marker attribute carries the json encoded link data,
+# e.g. data-richtext-link='{"link_type":"page","page":"1"}'. legacy formats
+# (one data-* attribute per field, marker value "true" - with any of the
+# marker names: data-quilljs-link is django-quilljs-link 0.1.0,
+# data-ckeditor-link is django-ckeditor-link) are read forever - legacy
+# content keeps working and is upgraded on the next editor save.
 MARKER_ATTRIBUTE = "data-richtext-link"
 MARKER_ATTRIBUTES = (MARKER_ATTRIBUTE, "data-quilljs-link", "data-ckeditor-link")
 
@@ -81,21 +85,34 @@ def iter_link_elements(fragment):
             yield link
 
 
+def serialize_link_data(data):
+    """
+    The canonical marker payload: sorted keys, empty values omitted, compact,
+    non-ascii kept literal - byte identical with the editors'
+    RichtextLink.serializeLinkData.
+    """
+    cleaned = {
+        key: force_str(value) for key, value in data.items() if value not in (None, "")
+    }
+    return json.dumps(
+        cleaned, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    )
+
+
 def link_kwargs_from_element(link, link_model, *, pop_attrs=False):
     """
     Build kwargs for an unsaved link model instance from an <a> element's
-    data attributes. With pop_attrs=True, consumed data attributes and the
-    marker attributes are removed from the element (used at render time).
+    link data. With pop_attrs=True, the marker attributes and (legacy format)
+    consumed data attributes are removed from the element (render time).
     """
     kwargs = {}
     dummy_link = link_model()
+    data = link_data_from_element(link)
     if pop_attrs:
         for marker in MARKER_ATTRIBUTES:
             link.attrib.pop(marker, None)
-    for key, value in list(link.items()):
-        if not key.startswith("data-"):
-            continue
-        new_key = key.replace("data-", "", 1)
+    for key, value in data.items():
+        new_key = key
         new_value = value
         if hasattr(dummy_link, new_key):
             if hasattr(dummy_link, new_key + "_id"):
@@ -105,7 +122,9 @@ def link_kwargs_from_element(link, link_model, *, pop_attrs=False):
                     new_value = None
             kwargs[new_key] = new_value
             if pop_attrs:
-                link.attrib.pop(key)
+                # legacy format leftovers; the json format has no per field
+                # attributes to clean up
+                link.attrib.pop("data-" + key, None)
     for key, formatted_string in conf.get_attr_modifiers().items():
         with contextlib.suppress(KeyError):
             # this error is an option, we dont know at all how our link is/was
@@ -115,7 +134,21 @@ def link_kwargs_from_element(link, link_model, *, pop_attrs=False):
 
 
 def link_data_from_element(link):
-    """All data attributes of an <a> element, markers excluded, prefix stripped."""
+    """
+    The link data of a marker <a> element: the marker's json payload (current
+    format), or all data attributes with the prefix stripped and markers
+    excluded (legacy formats).
+    """
+    marker_value = link.get(MARKER_ATTRIBUTE) or ""
+    if marker_value.startswith("{"):
+        # defensive: mangled payloads fall back to the legacy format
+        with contextlib.suppress(ValueError):
+            parsed = json.loads(marker_value)
+            if isinstance(parsed, dict):
+                return {
+                    key: "" if value is None else force_str(value)
+                    for key, value in parsed.items()
+                }
     return {
         key.replace("data-", "", 1): value
         for key, value in link.items()

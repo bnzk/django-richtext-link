@@ -38,18 +38,17 @@
         RichtextLink.LEGACY_MARKERS.forEach(function (marker) {
           node.removeAttribute(marker);
         });
-        var attrs = value.attrs || {};
-        Object.keys(attrs).forEach(function (key) {
-          node.setAttribute("data-" + key, attrs[key]);
-        });
-        node.setAttribute(RichtextLink.MARKER, "true");
+        node.setAttribute(
+          RichtextLink.MARKER,
+          RichtextLink.serializeLinkData(value.attrs || {}),
+        );
       }
 
       static formats(domNode) {
         if (RichtextLink.hasMarker(domNode)) {
           return {
             href: domNode.getAttribute("href") || "",
-            attrs: RichtextLink.parseDataAttributes(domNode),
+            attrs: RichtextLink.parseLinkData(domNode),
           };
         }
         return super.formats(domNode);

@@ -7,7 +7,10 @@
 (function (global) {
   "use strict";
 
-  // what we write - legacy markers are read forever, upgraded on next save
+  // what we write: the marker attribute carries the json encoded link data,
+  // e.g. data-richtext-link='{"link_type":"page","page":"1"}'. legacy formats
+  // (one data-* attribute per field, marker value "true" - and the older
+  // marker names below) are read forever and upgraded on the next save.
   var MARKER = "data-richtext-link";
   var LEGACY_MARKERS = ["data-quilljs-link", "data-ckeditor-link"];
   var MARKERS = [MARKER].concat(LEGACY_MARKERS);
@@ -18,7 +21,20 @@
     });
   }
 
-  function parseDataAttributes(domNode) {
+  function parseLinkData(domNode) {
+    // current format: the marker value is the json encoded link data
+    var markerValue = domNode.getAttribute(MARKER);
+    if (markerValue && markerValue.charAt(0) === "{") {
+      try {
+        var parsed = JSON.parse(markerValue);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          return parsed;
+        }
+      } catch (e) {
+        // fall through to the legacy format (defensive: mangled content)
+      }
+    }
+    // legacy formats (any marker generation): one data-* attribute per field
     var attrs = {};
     Array.prototype.forEach.call(domNode.attributes, function (attribute) {
       if (
@@ -31,11 +47,27 @@
     return attrs;
   }
 
+  function serializeLinkData(data) {
+    // canonical marker payload: sorted keys, empty values omitted - keeps
+    // saves deterministic across editors (matches utils.serialize_link_data)
+    var sorted = {};
+    Object.keys(data || {})
+      .sort()
+      .forEach(function (key) {
+        var value = data[key];
+        if (value === null || value === undefined || value === "") {
+          return;
+        }
+        sorted[key] = String(value);
+      });
+    return JSON.stringify(sorted);
+  }
+
   function prefillData(domNode, fallbackField) {
     if (!domNode) {
       return {};
     }
-    var data = parseDataAttributes(domNode);
+    var data = parseLinkData(domNode);
     if (!hasMarker(domNode) && domNode.getAttribute("href") && fallbackField) {
       // plain link (pre django-link content): prefill the fallback field
       data[fallbackField] = domNode.getAttribute("href");
@@ -56,8 +88,10 @@
     var attrs = {};
     Object.keys(data).forEach(function (key) {
       var value = data[key];
-      // prevent attributes with "null" values
-      attrs[key] = value === null || value === undefined ? "" : String(value);
+      if (value === null || value === undefined || value === "") {
+        return; // empty fields are left out of the stored payload
+      }
+      attrs[key] = String(value);
     });
     return {
       href: json.link_value ? String(json.link_value) : "",
@@ -238,7 +272,8 @@
     LEGACY_MARKERS: LEGACY_MARKERS,
     MARKERS: MARKERS,
     hasMarker: hasMarker,
-    parseDataAttributes: parseDataAttributes,
+    parseLinkData: parseLinkData,
+    serializeLinkData: serializeLinkData,
     prefillData: prefillData,
     dialogUrl: dialogUrl,
     attrsFromVerifyData: attrsFromVerifyData,

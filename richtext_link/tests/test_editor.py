@@ -74,6 +74,16 @@ class EditorTestCase(SeleniumTestCase):
         # quill's getSemanticHTML encodes spaces as &nbsp; - normalize for asserts
         return value.replace("&nbsp;", " ")
 
+    def get_link_data_list(self, field="richtext"):
+        """The link data bags of all marker links in the field's html."""
+        from richtext_link import utils
+
+        fragment = utils.parse_html_fragment(self.get_textarea_value(field))
+        return [
+            utils.link_data_from_element(link)
+            for link in utils.iter_link_elements(fragment)
+        ]
+
     def switch_to_dialog_iframe(self):
         iframe = self.webdriver.wait_for_css(".richtext-link-dialog[open] iframe")
         self.webdriver.switch_to.frame(iframe)
@@ -123,10 +133,11 @@ class TiptapEditorTests(EditorTestCase):
         email_input.clear()
         email_input.send_keys("test@bnzk.ch")
         self.click_dialog_ok()
-        self.webdriver.wait_for_css(".tiptap a[data-richtext-link='true']")
-        value = self.get_textarea_value()
-        self.assertIn("data-richtext-link", value)
-        self.assertIn('data-email="test@bnzk.ch"', value)
+        self.webdriver.wait_for_css(".tiptap a[data-richtext-link]")
+        # the marker carries the json payload (quotes html escaped)
+        self.assertIn('data-richtext-link="{', self.get_textarea_value())
+        datas = self.get_link_data_list()
+        self.assertTrue(any(d.get("email") == "test@bnzk.ch" for d in datas))
 
     def test_legacy_link_upgraded(self):
         self.open_change_form(3, ".richtext-link-tiptap .tiptap")
@@ -137,8 +148,12 @@ class TiptapEditorTests(EditorTestCase):
         editor.click()
         editor.send_keys("x")
         value = self.get_textarea_value()
-        self.assertIn("data-richtext-link", value)
+        # upgraded to the current format: json payload in the marker
+        self.assertIn('data-richtext-link="{', value)
         self.assertNotIn("data-ckeditor-link", value)
+        self.assertTrue(
+            any(d.get("testmodel") == "1" for d in self.get_link_data_list())
+        )
         # the plain link stays plain
         self.assertIn('<a href="https://www.example.com/">', value)
 
@@ -193,8 +208,10 @@ class TiptapEditorTests(EditorTestCase):
         )
         self.assertEqual(selected, "3")
         self.click_dialog_ok()
-        self.webdriver.wait_for_css(".tiptap a[data-richtext-link='true']")
-        self.assertIn('data-testmodel="3"', self.get_textarea_value())
+        self.webdriver.wait_for_css(".tiptap a[data-richtext-link]")
+        self.assertTrue(
+            any(d.get("testmodel") == "3" for d in self.get_link_data_list())
+        )
 
 
 @skip_unless_selenium
@@ -212,7 +229,8 @@ class QuillEditorTests(EditorTestCase):
         editor.click()
         editor.send_keys("x")
         value = self.get_textarea_value("richtext_quill")
-        self.assertIn("data-richtext-link", value)
+        # upgraded to the current format: json payload in the marker
+        self.assertIn('data-richtext-link="{', value)
         self.assertNotIn("data-quilljs-link", value)
 
     def test_dialog_applies(self):
@@ -225,9 +243,9 @@ class QuillEditorTests(EditorTestCase):
         email_input = self.webdriver.wait_for_css("#id_email")
         email_input.send_keys("test@bnzk.ch")
         self.click_dialog_ok()
-        self.webdriver.wait_for_css(".ql-editor a[data-richtext-link='true']")
-        value = self.get_textarea_value("richtext_quill")
-        self.assertIn('data-email="test@bnzk.ch"', value)
+        self.webdriver.wait_for_css(".ql-editor a[data-richtext-link]")
+        datas = self.get_link_data_list("richtext_quill")
+        self.assertTrue(any(d.get("email") == "test@bnzk.ch" for d in datas))
 
 
 @skip_unless_selenium
@@ -263,10 +281,12 @@ class Ckeditor5EditorTests(EditorTestCase):
         email_input.clear()
         email_input.send_keys("test@bnzk.ch")
         self.click_dialog_ok()
-        self.webdriver.wait_for_css(".ck-editor__editable a[data-richtext-link='true']")
-        value = self.get_textarea_value("richtext_ckeditor")
-        self.assertIn("data-richtext-link", value)
-        self.assertIn('data-email="test@bnzk.ch"', value)
+        self.webdriver.wait_for_css(".ck-editor__editable a[data-richtext-link]")
+        self.assertIn(
+            'data-richtext-link="{', self.get_textarea_value("richtext_ckeditor")
+        )
+        datas = self.get_link_data_list("richtext_ckeditor")
+        self.assertTrue(any(d.get("email") == "test@bnzk.ch" for d in datas))
 
     def test_legacy_ckeditor_marker_upgraded(self):
         self.open_change_form(3, ".richtext-link-ckeditor5 .ck-editor__editable")
@@ -276,7 +296,8 @@ class Ckeditor5EditorTests(EditorTestCase):
         editable.click()
         editable.send_keys("x")
         value = self.get_textarea_value("richtext_ckeditor")
-        self.assertIn("data-richtext-link", value)
+        # upgraded to the current format: json payload in the marker
+        self.assertIn('data-richtext-link="{', value)
         self.assertNotIn("data-ckeditor-link", value)
         # the plain link stays plain
         self.assertIn('<a href="https://www.example.com/">', value)

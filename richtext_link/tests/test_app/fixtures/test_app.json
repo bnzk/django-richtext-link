@@ -12,8 +12,8 @@
   },
   {
     "fields": {
-      "richtext": "<p>One Two <a data-richtext-link=\"true\" data-email=\"\" data-external_url=\"\" data-target=\"_blank\" data-when=\"2018-02-03\" href=\"http://no-link-given.com/\">Link One (Date Link, haha)</a></p><p><a data-richtext-link=\"true\" data-email=\"\" data-external_url=\"\" data-target=\"\" data-testmodel=\"1\" href=\"http://no-link-given.com/\">Link Two (Foreign Key)</a></p><p>what</p>",
-      "richtext_ckeditor": "<p>CKEditor content <a data-richtext-link=\"true\" data-email=\"\" data-external_url=\"\" data-target=\"\" data-testmodel=\"1\" href=\"http://no-link-given.com/\">ck fk link</a></p>",
+      "richtext": "<p>One Two <a data-richtext-link='{\"target\":\"_blank\",\"when\":\"2018-02-03\"}' href=\"http://no-link-given.com/\">Link One (Date Link, haha)</a></p><p><a data-richtext-link='{\"testmodel\":\"1\"}' href=\"http://no-link-given.com/\">Link Two (Foreign Key)</a></p><p>what</p>",
+      "richtext_ckeditor": "<p>CKEditor content <a data-richtext-link='{\"testmodel\":\"1\"}' href=\"http://no-link-given.com/\">ck fk link</a></p>",
       "richtext_quill": "<p>Quill content <a data-quilljs-link=\"true\" data-email=\"\" data-external_url=\"\" data-target=\"\" data-testmodel=\"1\" href=\"http://no-link-given.com/\">old quill marker link</a></p>",
       "richtext_second": "<p><a data-richtext-link=\"true\" data-email=\"\" data-external_url=\"\" data-target=\"targetvalue\" data-testmodel=\"\" href=\"http://no-link-given.com/\">Second RT, first link</a> <a data-richtext-link=\"true\" data-email=\"\" data-external_url=\"sadv\" data-target=\"sdvatest\" data-testmodel=\"1\" href=\"sadv\">link</a></p>",
       "title": "Testing different Link Form Widgets"

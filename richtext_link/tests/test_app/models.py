@@ -10,7 +10,7 @@ class TestModel(models.Model):
         max_length=255,
     )
     richtext = RichtextField(default="", blank=True)
-    richtext_second = RichtextField(default="", blank=True)
+    richtext_second = RichtextField(config_name="contrib", default="", blank=True)
     richtext_quill = RichtextField(config_name="quill", default="", blank=True)
     richtext_ckeditor = RichtextField(config_name="ckeditor", default="", blank=True)
 

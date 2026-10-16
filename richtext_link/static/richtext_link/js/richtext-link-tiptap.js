@@ -43,11 +43,11 @@
           }),
           djangoAttrs: {
             default: null,
-            // reads all markers - legacy content loads fine and is
-            // re-rendered with the new marker only (upgrade on save)
+            // reads all marker formats - legacy content loads fine and is
+            // re-rendered in the current format (upgrade on save)
             parseHTML: function (element) {
               return RichtextLink.hasMarker(element)
-                ? RichtextLink.parseDataAttributes(element)
+                ? RichtextLink.parseLinkData(element)
                 : null;
             },
             renderHTML: function (attrs) {
@@ -55,10 +55,9 @@
                 return {};
               }
               var rendered = {};
-              rendered[RichtextLink.MARKER] = "true";
-              Object.keys(attrs.djangoAttrs).forEach(function (key) {
-                rendered["data-" + key] = attrs.djangoAttrs[key];
-              });
+              rendered[RichtextLink.MARKER] = RichtextLink.serializeLinkData(
+                attrs.djangoAttrs,
+              );
               return rendered;
             },
           },
