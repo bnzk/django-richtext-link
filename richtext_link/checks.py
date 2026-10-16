@@ -31,6 +31,22 @@ PROBE_HTML = (
     f"{utils.MARKER_ATTRIBUTE}='{utils.serialize_link_data(PROBE_DATA)}'>"
     "link</a></p>"
 )
+# content written before the json format - checked while
+# RICHTEXT_LINK_LEGACY_CHECK is on (the default)
+LEGACY_PROBE_HTML = {
+    "attr format (richtext-link 0.2)": (
+        '<p><a href="#" data-richtext-link="true" '
+        'data-probe_field="probe value">link</a></p>'
+    ),
+    "data-quilljs-link": (
+        '<p><a href="#" data-quilljs-link="true" '
+        'data-probe_field="probe value">link</a></p>'
+    ),
+    "data-ckeditor-link": (
+        '<p><a href="#" data-ckeditor-link="true" '
+        'data-probe_field="probe value">link</a></p>'
+    ),
+}
 
 SURVIVAL_HINT = (
     "The data-richtext-link attribute carries the whole link payload: if a "
@@ -45,6 +61,8 @@ def check_sanitizer(app_configs, **kwargs):
     if not path:
         return []
     message = _sanitizer_probe_message(path)
+    if not message and conf.get_legacy_check():
+        message = _sanitizer_legacy_message(path)
     return [message] if message else []
 
 
@@ -94,6 +112,37 @@ def _sanitizer_probe_message(path):
     return None
 
 
+def _sanitizer_legacy_message(path):
+    """Round trip the legacy format probe links (the sanitizer must not
+    destroy them - upgrading is the editors' job, on the next save)."""
+    sanitize = import_string(path)
+    failing = []
+    for label, probe in LEGACY_PROBE_HTML.items():
+        try:
+            fragment = utils.parse_html_fragment(sanitize(probe))
+            links = list(utils.iter_link_elements(fragment))
+        except Exception:  # - any mangling counts as failure
+            failing.append(label)
+            continue
+        if not links or utils.link_data_from_element(links[0]) != PROBE_DATA:
+            failing.append(label)
+    if failing:
+        return checks.Error(
+            f"Improperly configured sanitizer: RICHTEXT_LINK_SANITIZER "
+            f"({path}) strips legacy format links ({', '.join(failing)}) - "
+            f"content saved before the json format and never resaved would "
+            f"lose its link data.",
+            hint=(
+                "Allow the legacy markers (data-quilljs-link, "
+                "data-ckeditor-link) and data-* attributes on <a> until all "
+                "content is resaved, then set "
+                "RICHTEXT_LINK_LEGACY_CHECK = False."
+            ),
+            id="richtext_link.E008",
+        )
+    return None
+
+
 def _attributes_touch_marker(attributes):
     """
     Best effort match of a GeneralHtmlSupport rule's "attributes" against our
@@ -136,23 +185,47 @@ def check_editor_configs(app_configs, **kwargs):
                     id="richtext_link.E005",
                 )
             )
-        if editor != "ckeditor5":
-            continue
-        html_support = (config.get("ckeditor") or {}).get("htmlSupport") or {}
-        for rules_key in ("allow", "disallow"):
-            for rule in html_support.get(rules_key) or []:
-                if not isinstance(rule, dict) or rule.get("name") != "a":
-                    continue
-                if _attributes_touch_marker(rule.get("attributes")):
-                    errors.append(
-                        checks.Error(
-                            f'RICHTEXT_LINK_CONFIGS["{name}"] ckeditor.'
-                            f'htmlSupport.{rules_key} has an "a" rule touching '
-                            f"data-* attributes: GeneralHtmlSupport must not "
-                            f"claim or strip {utils.MARKER_ATTRIBUTE} - the "
-                            f"djangolink plugin owns it.",
-                            hint=SURVIVAL_HINT,
-                            id="richtext_link.E006",
-                        )
-                    )
+        elif editor == "quilljs":
+            errors += _quill_config_messages(name, config)
+        elif editor == "ckeditor5":
+            errors += _ckeditor5_config_messages(name, config)
     return errors
+
+
+def _quill_config_messages(name, config):
+    # an explicit formats whitelist without "link" strips every link
+    # (ours included) the moment content loads
+    formats = config.get("formats")
+    if isinstance(formats, list | tuple) and "link" not in formats:
+        return [
+            checks.Error(
+                f'RICHTEXT_LINK_CONFIGS["{name}"] has a quill '
+                f'"formats" whitelist without "link": the editor '
+                f"strips all links (and their data) at load.",
+                hint=SURVIVAL_HINT,
+                id="richtext_link.E007",
+            )
+        ]
+    return []
+
+
+def _ckeditor5_config_messages(name, config):
+    messages = []
+    html_support = (config.get("ckeditor") or {}).get("htmlSupport") or {}
+    for rules_key in ("allow", "disallow"):
+        for rule in html_support.get(rules_key) or []:
+            if not isinstance(rule, dict) or rule.get("name") != "a":
+                continue
+            if _attributes_touch_marker(rule.get("attributes")):
+                messages.append(
+                    checks.Error(
+                        f'RICHTEXT_LINK_CONFIGS["{name}"] ckeditor.'
+                        f'htmlSupport.{rules_key} has an "a" rule touching '
+                        f"data-* attributes: GeneralHtmlSupport must not "
+                        f"claim or strip {utils.MARKER_ATTRIBUTE} - the "
+                        f"djangolink plugin owns it.",
+                        hint=SURVIVAL_HINT,
+                        id="richtext_link.E006",
+                    )
+                )
+    return messages

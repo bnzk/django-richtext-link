@@ -133,6 +133,37 @@ def link_kwargs_from_element(link, link_model, *, pop_attrs=False):
     return kwargs
 
 
+def lost_link_data(old_html, new_html):
+    """
+    Marker links of old_html whose data vanished in new_html while their
+    anchor survived as a plain link (same text) - the signature of a
+    stripping sanitizer or editor, as opposed to a deliberate link removal
+    (anchor gone) or a dialog edit (marker still there, payload changed).
+    Returns [(link_text, lost_payload), ...].
+    """
+    old_fragment = parse_html_fragment(old_html or "")
+    new_fragment = parse_html_fragment(new_html or "")
+    new_payloads = [
+        serialize_link_data(link_data_from_element(link))
+        for link in iter_link_elements(new_fragment)
+    ]
+    plain_texts = {
+        " ".join(link.text_content().split())
+        for link in new_fragment.cssselect("a")
+        if not any(link.get(marker) for marker in MARKER_ATTRIBUTES)
+    }
+    lost = []
+    for link in iter_link_elements(old_fragment):
+        payload = serialize_link_data(link_data_from_element(link))
+        if payload in new_payloads:
+            new_payloads.remove(payload)
+            continue
+        text = " ".join(link.text_content().split())
+        if text in plain_texts:
+            lost.append((text, payload))
+    return lost
+
+
 def link_data_from_element(link):
     """
     The link data of a marker <a> element: the marker's json payload (current

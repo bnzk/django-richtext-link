@@ -8,11 +8,22 @@
   The 0.2 format (marker `"true"` + one `data-*` attribute per field) and
   the legacy `data-quilljs-link`/`data-ckeditor-link` markers are read
   forever and upgraded on the next editor save - content needs no migration
-- startup system checks (`richtext_link.E001-E006`): optional
-  `RICHTEXT_LINK_SANITIZER` round trips a probe link through your sanitizer
-  (strong failure when the payload would not survive), editor configs are
-  validated (unknown editor, ckeditor5 htmlSupport rules touching the
-  marker)
+- startup system checks (`richtext_link.E001-E008`): optional
+  `RICHTEXT_LINK_SANITIZER` round trips probe links through your sanitizer
+  (strong failure when a payload would not survive; legacy formats included
+  while `RICHTEXT_LINK_LEGACY_CHECK` is on, the default), editor configs are
+  validated (unknown editor, quill `formats` whitelist without link,
+  ckeditor5 htmlSupport rules touching the marker)
+- editor side guard: every widget verifies at editor init that the loaded
+  content's link data survives the editor round trip (console error +
+  visible warning on loss, before anything can be saved), and the
+  `richtext_link_editor_check` management command drives probe links through
+  every configured editor in headless firefox (CI/predeploy, exits non-zero
+  on loss)
+- save guard (`RICHTEXT_LINK_SAVE_GUARD`, default on): pre_save comparison
+  logs an error on the `richtext_link` logger when a save loses link data
+  the stored value had (anchor survived, payload gone - deliberate removals
+  stay silent)
 - CKEditor 5 adapter, **bring your own build** (CKEditor 5 is GPL/commercial
   and not bundled with this MIT package): `editor: "ckeditor5"` configs with
   an `assets` convenience (widget loads your CKE5 urls), `licenseKey`

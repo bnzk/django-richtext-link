@@ -11,6 +11,38 @@
     return quill.getLength() <= 1 && quill.getText().trim() === "";
   }
 
+  function scheduleRoundTripCheck(
+    textarea,
+    editorContainer,
+    originalHtml,
+    getSerialized,
+  ) {
+    // the editor is a sanitizer too: verify the loaded content's link data
+    // survives its round trip, before anything can be saved. The result is
+    // marked on the textarea (data-richtext-link-checked), for the
+    // richtext_link_editor_check management command.
+    global.setTimeout(function () {
+      var lost = global.RichtextLink.checkContentRoundTrip(
+        originalHtml,
+        getSerialized(),
+        "the editor for #" + textarea.id,
+      );
+      if (lost.length) {
+        textarea.dataset.richtextLinkChecked = "lost";
+        var warning = document.createElement("div");
+        warning.className = "richtext-link-check-warning";
+        warning.textContent =
+          "richtext-link: this editor configuration loses link data (" +
+          lost.length +
+          " link(s)) - saving would destroy links. Details in the browser " +
+          "console.";
+        editorContainer.insertAdjacentElement("afterend", warning);
+      } else {
+        textarea.dataset.richtextLinkChecked = "ok";
+      }
+    }, 0);
+  }
+
   function initQuill(textarea, editorContainer, config) {
     var Quill = global.Quill;
     if (!Quill || !global.RichtextLink || !global.RichtextLink.quill) {
@@ -21,10 +53,11 @@
     }
     global.RichtextLink.quill.register(Quill);
     delete config.editor; // ours, not a Quill option
+    var initialValue = textarea.value;
     var quill = new Quill(editorContainer, config);
-    if (textarea.value) {
+    if (initialValue) {
       quill.setContents(
-        quill.clipboard.convert({ html: textarea.value }),
+        quill.clipboard.convert({ html: initialValue }),
         "silent",
       );
     }
@@ -32,6 +65,14 @@
       // getSemanticHTML, not root.innerHTML: no ql-ui/data-list leakage
       textarea.value = quillIsEmpty(quill) ? "" : quill.getSemanticHTML();
     });
+    scheduleRoundTripCheck(
+      textarea,
+      editorContainer,
+      initialValue,
+      function () {
+        return quillIsEmpty(quill) ? "" : quill.getSemanticHTML();
+      },
+    );
     return true;
   }
 
@@ -46,12 +87,25 @@
       );
       return false;
     }
-    global.RichtextLink.tiptap.createEditor(editorContainer, config, {
-      content: textarea.value,
-      onUpdate: function (editor) {
-        textarea.value = editor.isEmpty ? "" : editor.getHTML();
+    var initialValue = textarea.value;
+    var editor = global.RichtextLink.tiptap.createEditor(
+      editorContainer,
+      config,
+      {
+        content: initialValue,
+        onUpdate: function (editor) {
+          textarea.value = editor.isEmpty ? "" : editor.getHTML();
+        },
       },
-    });
+    );
+    scheduleRoundTripCheck(
+      textarea,
+      editorContainer,
+      initialValue,
+      function () {
+        return editor.isEmpty ? "" : editor.getHTML();
+      },
+    );
     return true;
   }
 
@@ -68,12 +122,23 @@
       );
       return false;
     }
+    var initialValue = textarea.value;
     global.RichtextLink.ckeditor5
       .createEditor(editorContainer, config, {
-        content: textarea.value,
+        content: initialValue,
         onUpdate: function (editor) {
           textarea.value = editor.getData();
         },
+      })
+      .then(function (editor) {
+        scheduleRoundTripCheck(
+          textarea,
+          editorContainer,
+          initialValue,
+          function () {
+            return editor.getData();
+          },
+        );
       })
       .catch(function (error) {
         // async failure (bad licenseKey, bad plugin config): surface it and
@@ -84,6 +149,7 @@
         );
         editorContainer.remove();
         textarea.style.display = "";
+        textarea.dataset.richtextLinkChecked = "failed";
         delete textarea.dataset.richtextLinkInitialized;
       });
     return true;
@@ -120,6 +186,7 @@
     }
     if (!initialized) {
       editorContainer.remove();
+      textarea.dataset.richtextLinkChecked = "failed";
       return;
     }
     textarea.style.display = "none";

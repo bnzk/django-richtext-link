@@ -11,6 +11,17 @@
   font-size: 14px;
 }
 
+/* round trip check: the editor config loses link data of the loaded content */
+
+.richtext-link-check-warning {
+  margin-top: 4px;
+  padding: 6px 10px;
+  border: 1px solid var(--error-fg, #ba2121);
+  border-radius: 4px;
+  color: var(--error-fg, #ba2121);
+  font-weight: bold;
+}
+
 .richtext-link-widget .ql-toolbar,
 .richtext-link-widget .ql-container {
   border-color: var(--border-color, #ccc);

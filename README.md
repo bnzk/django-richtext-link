@@ -126,6 +126,8 @@ automatically. Render the content with resolved links:
 | `RICHTEXT_LINK_CONFIGS` | see below | Editor configs; `RichtextField(config_name="...")` picks one. |
 | `RICHTEXT_LINK_ATTR_MODIFIERS` | `{}` | `{field: format_string}` - recombine link data at render time, mostly for MultiWidget fields (e.g. `{"cms_page": "{cms_page_2}"}`). |
 | `RICHTEXT_LINK_SANITIZER` | `None` | Dotted path to your html sanitize callable - a startup system check verifies the stored link format survives it (see "Stored format & sanitizers"). |
+| `RICHTEXT_LINK_LEGACY_CHECK` | `True` | Checks also verify the legacy link formats survive (content never resaved since django-ckeditor-link / 0.1 / 0.2). Set `False` once no such content is left. |
+| `RICHTEXT_LINK_SAVE_GUARD` | `True` | Logs an error (`richtext_link` logger) when a save loses link data the stored value had (see "Stored format & sanitizers"). |
 | `RICHTEXT_LINK_INDEX_PROTECT` | `False` | link_index: raise when deleting a link target. |
 
 ## Editors
@@ -289,10 +291,40 @@ Two rules keep the format safe:
 RICHTEXT_LINK_SANITIZER = "myproject.utils.sanitize_richtext"
 ```
 
-What no check can see: a sanitizer the settings never mention, or content
-edited by an editor without this package's adapters. The link index below is
-the tripwire for those - `rebuild_richtext_link_index` after sanitizer or
-editor changes, and watch the link count.
+With `RICHTEXT_LINK_LEGACY_CHECK = True` (the default) the sanitizer probe
+also covers the legacy formats - content saved before the json format and
+never resaved must not lose its link data either. Set it to `False` once no
+such content is left (the strict one-attribute allowlist is then enough).
+
+**The editors are sanitizers too** - a strict Quill `formats` whitelist, a
+CKEditor plugin setup or your own editor build can strip links the moment
+content loads. Three guards cover that side:
+
+- static config analysis at startup (part of the system checks above, e.g. a
+  Quill `formats` whitelist without `"link"`)
+- every widget verifies at editor init that the loaded content's link data
+  survives the editor's parse/serialize round trip (legacy formats load
+  upgraded, so only real loss counts) - on loss: a loud console error plus a
+  visible warning under the editor, before anything can be saved
+- `manage.py richtext_link_editor_check` - the same round trip with probe
+  links (current + legacy formats), driven through every configured editor
+  in headless firefox, exiting non-zero on loss. Run it in CI or predeploy,
+  next to `manage.py check --deploy` (needs selenium + geckodriver;
+  bring-your-own CKEditor configs without `assets` are reported as skipped)
+
+**The last safety net** runs at save time, server side: a `pre_save`
+comparison logs an error on the `richtext_link` logger whenever a saved
+value lost link data the stored value had - specifically a link whose anchor
+survived but whose payload vanished, the signature of a stripping sanitizer
+or editor (deliberate link removals and dialog edits stay silent). Whatever
+save path the other guards never saw - a foreign admin form, an api, a
+custom sanitizer - the loss surfaces here. Wire the `richtext_link` logger
+to your error reporting; `RICHTEXT_LINK_SAVE_GUARD = False` disables it.
+
+What no check can see: content mangled outside of model saves (raw sql,
+`queryset.update()`). The link index below is the tripwire for that -
+`rebuild_richtext_link_index` after sanitizer or editor changes, and watch
+the link count.
 
 ## Quick search in the link dialog
 

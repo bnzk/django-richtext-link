@@ -6,4 +6,6 @@ class RichtextLinkConfig(AppConfig):
     verbose_name = "Richtext link"
 
     def ready(self):
-        from richtext_link import checks  # noqa: F401 - registers system checks
+        from richtext_link import checks, guards  # noqa: F401 - system checks
+
+        guards.connect()

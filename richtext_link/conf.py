@@ -31,6 +31,26 @@ def get_sanitizer_path():
     return getattr(settings, "RICHTEXT_LINK_SANITIZER", None)
 
 
+def get_save_guard():
+    """
+    Default True: a pre_save comparison logs an error ("richtext_link"
+    logger) when a saved richtext value lost link data that the old value
+    had - see richtext_link.guards.
+    """
+    return getattr(settings, "RICHTEXT_LINK_SAVE_GUARD", True)
+
+
+def get_legacy_check():
+    """
+    Default True: the startup checks (and the richtext_link_editor_check
+    command) also verify that the legacy link formats survive - content saved
+    by django-ckeditor-link, django-quilljs-link 0.1 or django-richtext-link
+    0.2 that was never resaved. Set RICHTEXT_LINK_LEGACY_CHECK = False once
+    no such content is left.
+    """
+    return getattr(settings, "RICHTEXT_LINK_LEGACY_CHECK", True)
+
+
 def get_attr_modifiers():
     """
     dict of {field_name: format_string} - format_string is formatted with all

@@ -192,6 +192,56 @@ class TiptapEditorTests(EditorTestCase):
         self.assertIn("hello first editor", self.get_textarea_value("richtext"))
         self.assertEqual(second_before, self.get_textarea_value("richtext_second"))
 
+    def test_js_round_trip_check(self):
+        """RichtextLink.checkContentRoundTrip flags lost link data."""
+        self.open_change_form(2, ".richtext-link-tiptap .tiptap")
+        lost = self.webdriver.execute_script(
+            "return RichtextLink.checkContentRoundTrip(arguments[0], arguments[1]);",
+            '<p><a data-ckeditor-link="true" data-x="1" href="#">a</a></p>',
+            "<p>a</p>",
+        )
+        self.assertEqual(lost, ['{"x":"1"}'])
+        # legacy -> json upgrade is not a loss (canonical payload compare)
+        upgraded = self.webdriver.execute_script(
+            "return RichtextLink.checkContentRoundTrip(arguments[0], arguments[1]);",
+            '<p><a data-richtext-link="true" data-x="1" href="#">a</a></p>',
+            '<p><a data-richtext-link=\'{"x":"1"}\' href="#">a</a></p>',
+        )
+        self.assertEqual(upgraded, [])
+
+    def test_round_trip_check_passes_on_fixture_content(self):
+        self.open_change_form(2, ".richtext-link-tiptap .tiptap")
+        from selenium.webdriver.support.ui import WebDriverWait
+
+        WebDriverWait(self.webdriver, 10).until(
+            lambda d: d.execute_script(
+                'var areas = document.querySelectorAll("'
+                'textarea[data-richtext-link-widget]");'
+                "return Array.prototype.every.call(areas, function (t) {"
+                "  return t.dataset.richtextLinkChecked;"
+                "});"
+            )
+        )
+        statuses = dict(
+            self.webdriver.execute_script(
+                'var areas = document.querySelectorAll("'
+                'textarea[data-richtext-link-widget]");'
+                "return Array.prototype.map.call(areas, function (t) {"
+                "  return [t.id, t.dataset.richtextLinkChecked];"
+                "});"
+            )
+        )
+        for field in ("richtext", "richtext_second", "richtext_quill"):
+            self.assertEqual(statuses[f"id_{field}"], "ok")
+        self.assertEqual(
+            statuses["id_richtext_ckeditor"], "ok" if HAS_CKEDITOR5 else "failed"
+        )
+        warnings = self.webdriver.execute_script(
+            "return document.querySelectorAll("
+            '".richtext-link-check-warning").length;'
+        )
+        self.assertEqual(warnings, 0)
+
     def test_dialog_quick_search(self):
         self.open_change_form(2, ".richtext-link-tiptap .tiptap")
         self.find_editors()[0].click()

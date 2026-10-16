@@ -99,6 +99,55 @@
     };
   }
 
+  function collectLinkData(html) {
+    // canonical payloads of all marker links in an html string, format aware
+    if (!html) {
+      return [];
+    }
+    var doc = new DOMParser().parseFromString(html, "text/html");
+    var payloads = [];
+    Array.prototype.forEach.call(doc.querySelectorAll("a"), function (a) {
+      if (hasMarker(a)) {
+        payloads.push(serializeLinkData(parseLinkData(a)));
+      }
+    });
+    return payloads;
+  }
+
+  function checkContentRoundTrip(originalHtml, serializedHtml, label) {
+    // the editor is a sanitizer too: every link payload of the loaded
+    // content must survive its parse/serialize round trip. Legacy formats
+    // come back upgraded - payloads are compared canonically, so only real
+    // data loss counts. Returns the lost payloads, loudly.
+    var expected = collectLinkData(originalHtml);
+    if (!expected.length) {
+      return [];
+    }
+    var actual = collectLinkData(serializedHtml);
+    var lost = [];
+    expected.forEach(function (payload) {
+      var found = actual.indexOf(payload);
+      if (found < 0) {
+        lost.push(payload);
+      } else {
+        actual.splice(found, 1);
+      }
+    });
+    if (lost.length) {
+      global.console.error(
+        "richtext-link: " +
+          (label || "editor") +
+          " LOSES LINK DATA - " +
+          lost.length +
+          " link payload(s) of the loaded content did not survive the " +
+          "editor round trip. Saving would destroy these links. Check " +
+          "RICHTEXT_LINK_CONFIGS and your editor build/plugins. Lost: " +
+          lost.join(" "),
+      );
+    }
+    return lost;
+  }
+
   var defaults = {
     fallbackField: "external",
     linkText: "link",
@@ -274,6 +323,8 @@
     hasMarker: hasMarker,
     parseLinkData: parseLinkData,
     serializeLinkData: serializeLinkData,
+    collectLinkData: collectLinkData,
+    checkContentRoundTrip: checkContentRoundTrip,
     prefillData: prefillData,
     dialogUrl: dialogUrl,
     attrsFromVerifyData: attrsFromVerifyData,

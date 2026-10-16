@@ -26,6 +26,18 @@ def mangling_sanitizer(html):
     return utils.serialize_html_fragment(fragment)
 
 
+def strict_sanitizer(html):
+    # keeps the json format, but strips legacy markers and data-* attributes
+    fragment = utils.parse_html_fragment(html)
+    for link in fragment.cssselect("a"):
+        for key in list(link.attrib):
+            if key == utils.MARKER_ATTRIBUTE and link.attrib[key].startswith("{"):
+                continue
+            if key.startswith("data-"):
+                del link.attrib[key]
+    return utils.serialize_html_fragment(fragment)
+
+
 def raising_sanitizer(html):
     raise RuntimeError("nope")
 
@@ -60,6 +72,19 @@ class SanitizerCheckTests(TestCase):
     def test_mangled_payload_fails(self):
         self.assertEqual(self.check_ids(), ["richtext_link.E004"])
 
+    @override_settings(RICHTEXT_LINK_SANITIZER=f"{THIS}.strict_sanitizer")
+    def test_stripped_legacy_formats_fail(self):
+        # the json format survives, the legacy formats do not
+        self.assertEqual(self.check_ids(), ["richtext_link.E008"])
+
+    @override_settings(
+        RICHTEXT_LINK_SANITIZER=f"{THIS}.strict_sanitizer",
+        RICHTEXT_LINK_LEGACY_CHECK=False,
+    )
+    def test_legacy_check_disabled(self):
+        # all legacy content resaved: the strict allowlist is fine
+        self.assertEqual(self.check_ids(), [])
+
 
 class EditorConfigCheckTests(TestCase):
     def check_ids(self):
@@ -75,6 +100,20 @@ class EditorConfigCheckTests(TestCase):
     @override_settings(RICHTEXT_LINK_CONFIGS={"default": "not a dict"})
     def test_config_not_a_dict(self):
         self.assertEqual(self.check_ids(), ["richtext_link.E005"])
+
+    @override_settings(
+        RICHTEXT_LINK_CONFIGS={"quill": {"editor": "quilljs", "formats": ["bold"]}}
+    )
+    def test_quill_formats_without_link(self):
+        self.assertEqual(self.check_ids(), ["richtext_link.E007"])
+
+    @override_settings(
+        RICHTEXT_LINK_CONFIGS={
+            "quill": {"editor": "quilljs", "formats": ["bold", "link"]}
+        }
+    )
+    def test_quill_formats_with_link_passes(self):
+        self.assertEqual(self.check_ids(), [])
 
     @override_settings(
         RICHTEXT_LINK_CONFIGS={
