@@ -135,7 +135,13 @@ class LinkIndexTests(TestCase):
         self.assertIn(TestModel, index.indexed_models())
         self.assertEqual(
             index.indexed_models()[TestModel],
-            ("richtext", "richtext_second", "richtext_quill", "richtext_ckeditor"),
+            (
+                "richtext",
+                "richtext_tiptap",
+                "richtext_second",
+                "richtext_quill",
+                "richtext_ckeditor",
+            ),
         )
 
     @override_settings(RICHTEXT_LINK_INDEX_PROTECT=True)

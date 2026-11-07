@@ -31,6 +31,18 @@ RICHTEXT_LINK_CONFIGS = {
         },
         "djangolink": {},
     },
+    # an explicitly configured tiptap: full toolbar, headings h2-h4
+    "tiptap": {
+        "editor": "tiptap",
+        "toolbar": [
+            ["bold", "italic"],
+            ["h2", "h3", "h4", "p"],
+            ["bulletList", "orderedList"],
+            ["djangolink", "clear"],
+        ],
+        "headingLevels": [2, 3, 4],
+        "djangolink": {},
+    },
     # the contrib link_model dialog (LinkBaseAdmin: link_type select +
     # formfieldstash), explicit urls instead of the RICHTEXT_LINK_MODEL default
     "contrib": {
