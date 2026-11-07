@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 0.3.0 (unreleased)
+## 0.3.0 (2026-11-07)
 
 - djangocms-text bridge (`richtext_link.contrib.djangocms_text`): an
   `RTEConfig` + registry extension that puts the django link dialog into
