@@ -1,6 +1,11 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    # tag pushes run CI via the release workflow (workflow_call)
+    branches: ["**"]
+  pull_request:
+  workflow_call:
 
 jobs:
   test:
