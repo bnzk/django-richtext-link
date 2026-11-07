@@ -51,7 +51,7 @@ BRIDGE_CSS = ("richtext_link/css/richtext_link.css",)
 
 
 class RichtextLinkRTEConfig(RTEConfig):
-    def __init__(
+    def __init__(  # noqa: PLR0913 - mirrors RTEConfig's signature + djangolink
         self,
         name="tiptap_richtext_link",
         config="TIPTAP",

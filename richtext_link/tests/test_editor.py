@@ -103,14 +103,14 @@ class TiptapEditorTests(EditorTestCase):
 
     def test_editor_renders(self):
         self.open_change_form(2, ".richtext-link-tiptap .tiptap")
-        # richtext + richtext_second are tiptap
-        self.assertEqual(len(self.find_editors()), 2)
+        # richtext + richtext_tiptap + richtext_second are tiptap
+        self.assertEqual(len(self.find_editors()), 3)
         buttons = self.webdriver.find_css(
             ".richtext-link-toolbar button[data-item='djangolink']"
         )
         if not isinstance(buttons, list):
             buttons = [buttons]
-        self.assertEqual(len(buttons), 2)
+        self.assertEqual(len(buttons), 3)
         # fixture links survived the html -> schema -> dom round trip
         self.webdriver.find_css(".tiptap a[data-richtext-link]")
 

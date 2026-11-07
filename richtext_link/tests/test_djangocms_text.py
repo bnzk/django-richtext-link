@@ -28,9 +28,7 @@ class RTEConfigTests(TestCase):
         config = self._config()
         self.assertIn("djangocms_text/bundles/bundle.tiptap.min.js", config.js)
         self.assertIn("richtext_link/js/richtext-link-core.js", config.js)
-        self.assertIn(
-            "richtext_link/js/richtext-link-djangocms-text.js", config.js
-        )
+        self.assertIn("richtext_link/js/richtext-link-djangocms-text.js", config.js)
         # core before the bridge
         self.assertLess(
             config.js.index("richtext_link/js/richtext-link-core.js"),
@@ -61,9 +59,7 @@ class RTEConfigTests(TestCase):
         # must survive what the widget does: deepcopy + json dump. the urls
         # stay lazy on purpose - widgets can be instantiated at import time,
         # an eager reverse there freezes a half-populated admin urlconf.
-        dumped = json.dumps(
-            copy.deepcopy(config.configuration), cls=DjangoJSONEncoder
-        )
+        dumped = json.dumps(copy.deepcopy(config.configuration), cls=DjangoJSONEncoder)
         self.assertIn("/linkmodel/verify/", dumped)
 
     def test_configuration_overrides(self):

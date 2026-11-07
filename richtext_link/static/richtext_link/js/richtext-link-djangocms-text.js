@@ -189,9 +189,8 @@
                     return {};
                   }
                   var rendered = {};
-                  rendered[RichtextLink.MARKER] = RichtextLink.serializeLinkData(
-                    attrs.richtextLink,
-                  );
+                  rendered[RichtextLink.MARKER] =
+                    RichtextLink.serializeLinkData(attrs.richtextLink);
                   return rendered;
                 },
               },
