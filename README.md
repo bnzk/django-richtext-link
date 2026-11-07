@@ -248,6 +248,35 @@ startup system check (`richtext_link.E006`) refuses such configs.
 
 Links are edited via the `djangolink` toolbar button or double click.
 
+### djangocms-text (TipTap)
+
+For [djangocms-text](https://github.com/django-cms/djangocms-text) the bridge
+plugs into its *bundled* TipTap editor (TipTap 3, same as our adapter) via
+djangocms-text's contrib registry - not a `RICHTEXT_LINK_CONFIGS` editor, but
+an `RTEConfig`:
+
+```python
+# settings.py
+TEXT_EDITOR = "richtext_link.contrib.djangocms_text.rte_config"
+RICHTEXT_LINK_MODEL = "myproject.models.Link"
+```
+
+or instantiate `RichtextLinkRTEConfig(js=..., css=..., djangolink=...)` in
+your project to add own editor assets (see the module docstring).
+
+What it does: the toolbar `Link` button and clicks on links open the
+django link dialog instead of djangocms-text's built-in link form, and the
+marker attribute survives djangocms-text's schema (which would otherwise
+strip it on save). Legacy `data-ckeditor-link`/`data-quilljs-link` content
+is read and upgraded on the next save, as everywhere.
+
+Rendering stays yours: djangocms-text does not run our resolution, so pipe
+the output through the `richtext_link_add_links` template filter in your
+text plugin templates (the stored fallback `href` covers anything that
+slips through unfiltered). djangocms-text's inline editing mode carries no
+custom editor configuration, so the dialog opens in field editors (plugin
+modal, `HTMLField`) only - data preservation works everywhere.
+
 ## Stored format & sanitizers
 
 A django link is stored as plain HTML with one attribute, the marker, whose

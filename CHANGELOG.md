@@ -2,6 +2,13 @@
 
 ## 0.3.0 (unreleased)
 
+- djangocms-text bridge (`richtext_link.contrib.djangocms_text`): an
+  `RTEConfig` + registry extension that puts the django link dialog into
+  djangocms-text's bundled TipTap editor (toolbar `Link` button override +
+  click on links) and keeps the marker attribute alive through
+  djangocms-text's schema - including reading/upgrading legacy
+  `data-ckeditor-link` content. Render-time resolution stays with the
+  `richtext_link_add_links` template filter
 - **new stored link format**: the marker attribute carries the whole link
   data as json (`data-richtext-link='{"page":"3"}'`) - a single attribute to
   whitelist in sanitizers/html schemas, unambiguous ownership of the data.
